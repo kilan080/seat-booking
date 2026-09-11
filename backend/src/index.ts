@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { pool } from "./db";
+import { error } from "console";
 
 
 dotenv.config();
@@ -55,6 +56,68 @@ app.post("/seats/:seatId/hold", async (req, res) =>{
 
         await client.query("COMMIT");
         res.json({ success: true, seatId, heldUntil });
+    } catch (err) {
+        await client.query("ROLLBACK");
+        console.error(err);
+        res.status(500).json({
+            error: "something went wrong"
+        });
+    } finally {
+        client.release()
+    }
+})
+
+app.post("/seats/:seatId/confirm", async (req, res) => {
+    const { seatId } = req.params;
+    const { userId } = req.body;
+
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const seatResult = await client.query(
+            "SELECT * FROM seats WHERE id = $1 FOR UPDATE",
+            [seatId]
+        );
+
+        const seat = seatResult.rows[0];
+
+        if(!seat) {
+            await client.query("ROLLBACK");
+            return res.status(404).json({
+                error: "Seat not found"
+            });
+        };
+
+        if(seat.status !== "held") {
+            await client.query("ROLLBACK");
+            return res.status(409).json({
+                error: "seat not held by anyone"
+            });
+        }
+
+        if(seat.held_by !== userId) {
+            await client.query("ROLLBACK");
+            return res.status(403).json({
+                error: "This seat is held by someone else"
+            });
+        }
+
+        if(new Date(seat.held_until) < new Date()) {
+            await client.query("ROLLBACK");
+            return res.status(410).json({
+                error: "Hold has expired"
+            })
+        }
+
+        await client.query(
+            "UPDATE seats SET status = 'sold', held_until = NULL WHERE id = $1",
+            [seatId]
+        )
+
+        await client.query("COMMIT");
+        res.json({ success: true, seatId, status: "sold"});
     } catch (err) {
         await client.query("ROLLBACK");
         console.error(err);
