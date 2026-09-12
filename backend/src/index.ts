@@ -127,7 +127,21 @@ app.post("/seats/:seatId/confirm", async (req, res) => {
     } finally {
         client.release()
     }
-})
+});
+
+async function releaseExpiredHolds() {
+    const result = await pool.query(
+        `UPDATE seats
+        SET status = 'available', held_by = NULL, held_until = NULL
+        WHERE status = 'held' AND held_until < NOW()`
+    )
+
+    if(result.rowCount && result.rowCount > 0) {
+        console.log(`Released ${result.rowCount} expired hold(s)`)
+    }
+}
+
+setInterval(releaseExpiredHolds, 15000);  // check for expired holds every 15seconds
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
