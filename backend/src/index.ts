@@ -11,6 +11,44 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const eventRooms = new Map<string, Set<import("ws").WebSocket>>();
+
+function joinRoom(event_id: string, ws: import("ws").WebSocket) {
+    if(!eventRooms.has(event_id)) {
+        eventRooms.set(event_id, new Set());
+    }
+    eventRooms.get(event_id)!.add(ws);
+
+}
+
+function leaveRoom(event_id: string, ws: import("ws").WebSocket) {
+    eventRooms.get(event_id)?.delete(ws)
+}
+
+function broadcastToEvent(event_id: string, message: object) {
+    console.log("Attempting broadcast to room:", event_id);
+    console.log("Known rooms:", Array.from(eventRooms.keys()));
+
+    const room = eventRooms.get(event_id);
+    if(!room) {
+        console.log("No Room found for event: ", event_id);
+        return;
+    }
+
+    console.log("Room found, size:", room.size)
+
+    const payload = JSON.stringify(message);
+    for (const client of room) {
+        console.log("Client readyState:", client.readyState, "OPEN is:", client.OPEN);
+        if(client.readyState === client.OPEN) {
+            client.send(payload);
+            console.log("sent message to client");
+        } else {
+            console.log("Skipped client - not open");
+        }
+    }
+}
+
 app.get("/events/:eventId/seats", async (req, res) => {
   const { eventId } = req.params;
 
@@ -56,6 +94,11 @@ app.post("/seats/:seatId/hold", async (req, res) =>{
         );
 
         await client.query("COMMIT");
+        broadcastToEvent(seat.event_id.toString(), {
+            type:"seat_updated",
+            seatId: seat.id,
+            status: "held"
+        });
         res.json({ success: true, seatId, heldUntil });
     } catch (err) {
         await client.query("ROLLBACK");
@@ -148,13 +191,23 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws) => {
-    console.log('web WebSocket connection');
+    console.log('New WebSocket connection');
+    let currentEventId: string | null = null;
 
     ws.on("message", (message) => {
-        console.log("Received:" , message.toString());
+        const data = JSON.parse(message.toString());
+
+        if (data.type === "join"  && typeof data.eventId === "string") {
+            currentEventId = data.eventId;
+            joinRoom(data.eventId, ws);
+            console.log(`Client joined event ${currentEventId}`);
+        }
     });
 
     ws.on("close", () => {
+        if(currentEventId) {    
+            leaveRoom(currentEventId, ws);
+        }
         console.log("Connection cosed");
     });
 });
