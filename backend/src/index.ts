@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { pool } from "./db";
-import { error } from "console";
+import { WebSocketServer } from "ws";
+import http from "http";
 
 
 dotenv.config();
@@ -143,5 +144,21 @@ async function releaseExpiredHolds() {
 
 setInterval(releaseExpiredHolds, 15000);  // check for expired holds every 15seconds
 
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+
+wss.on("connection", (ws) => {
+    console.log('web WebSocket connection');
+
+    ws.on("message", (message) => {
+        console.log("Received:" , message.toString());
+    });
+
+    ws.on("close", () => {
+        console.log("Connection cosed");
+    });
+});
+
+
 const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`Server running on port ${port}`));
+server.listen(port, () => console.log(`Server running on port ${port}`));
