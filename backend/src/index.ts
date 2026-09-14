@@ -26,8 +26,8 @@ function leaveRoom(event_id: string, ws: import("ws").WebSocket) {
 }
 
 function broadcastToEvent(event_id: string, message: object) {
-    console.log("Attempting broadcast to room:", event_id);
-    console.log("Known rooms:", Array.from(eventRooms.keys()));
+    // console.log("Attempting broadcast to room:", event_id);
+    // console.log("Known rooms:", Array.from(eventRooms.keys()));
 
     const room = eventRooms.get(event_id);
     if(!room) {
@@ -39,7 +39,7 @@ function broadcastToEvent(event_id: string, message: object) {
 
     const payload = JSON.stringify(message);
     for (const client of room) {
-        console.log("Client readyState:", client.readyState, "OPEN is:", client.OPEN);
+        // console.log("Client readyState:", client.readyState, "OPEN is:", client.OPEN);
         if(client.readyState === client.OPEN) {
             client.send(payload);
             console.log("sent message to client");
@@ -161,6 +161,11 @@ app.post("/seats/:seatId/confirm", async (req, res) => {
         )
 
         await client.query("COMMIT");
+        broadcastToEvent(seat.event_id.toString(), {
+            type: 'seat updated',
+            seatId:seat.id,
+            status: 'sold'
+        })
         res.json({ success: true, seatId, status: "sold"});
     } catch (err) {
         await client.query("ROLLBACK");
@@ -177,11 +182,20 @@ async function releaseExpiredHolds() {
     const result = await pool.query(
         `UPDATE seats
         SET status = 'available', held_by = NULL, held_until = NULL
-        WHERE status = 'held' AND held_until < NOW()`
+        WHERE status = 'held' AND held_until < NOW()
+        RETURNING id, event_id`
     )
 
     if(result.rowCount && result.rowCount > 0) {
         console.log(`Released ${result.rowCount} expired hold(s)`)
+
+        for (const seat  of result.rows) {
+            broadcastToEvent(seat.event_id.toString(), {
+                type: "seat updated",
+                seatId: seat.id,
+                status: "available"
+            })
+        }
     }
 }
 
