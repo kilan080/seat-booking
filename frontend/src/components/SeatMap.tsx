@@ -29,6 +29,24 @@ export default function SeatMap({ eventId }: { eventId: string }) {
   }, [eventId]);
 
   useEffect(() => {
+    const socket = new WebSocket(process.env.NEXT_PUBLIC_WS_URL!);
+
+    socket.onopen = () => {
+      socket.send(JSON.stringify({ type: "join", eventId }));
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === "seat_updated") {
+        setSeats((prev) =>
+          prev.map((s) =>
+            s.id === data.seatId ? { ...s, status: data.status } : s,
+          ),
+        );
+      }
+    };
+
     return () => {
       socket.close();
     };
