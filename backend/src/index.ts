@@ -26,8 +26,6 @@ function leaveRoom(event_id: string, ws: import("ws").WebSocket) {
 }
 
 function broadcastToEvent(event_id: string, message: object) {
-    // console.log("Attempting broadcast to room:", event_id);
-    // console.log("Known rooms:", Array.from(eventRooms.keys()));
 
     const room = eventRooms.get(event_id);
     if(!room) {
@@ -39,7 +37,6 @@ function broadcastToEvent(event_id: string, message: object) {
 
     const payload = JSON.stringify(message);
     for (const client of room) {
-        // console.log("Client readyState:", client.readyState, "OPEN is:", client.OPEN);
         if(client.readyState === client.OPEN) {
             client.send(payload);
             console.log("sent message to client");
