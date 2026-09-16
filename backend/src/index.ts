@@ -57,6 +57,11 @@ app.get("/events/:eventId/seats", async (req, res) => {
   res.json(result.rows);
 });
 
+app.get("/events", async (req, res) => {
+  const result = await pool.query("SELECT * FROM events ORDER BY id");
+  res.json(result.rows);
+});
+
 app.post("/seats/:seatId/hold", async (req, res) =>{
     const { seatId } = req.params;
     const { userId } = req.body;
