@@ -99,7 +99,8 @@ app.post("/seats/:seatId/hold", async (req, res) =>{
         broadcastToEvent(seat.event_id.toString(), {
             type:"seat_updated",
             seatId: seat.id,
-            status: "held"
+            status: "held",
+            heldUntil: heldUntil.toISOString()
         });
         res.json({ success: true, seatId, heldUntil });
     } catch (err) {
