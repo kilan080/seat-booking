@@ -18,6 +18,7 @@ const ROW_ORDER = ["A", "B", "C", "D", "E"];
 
 export default function SeatMap({ eventId }: { eventId: string }) {
   const [seats, setSeats] = useState<Seat[]>([]);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     async function fetchSeats() {
@@ -39,10 +40,17 @@ export default function SeatMap({ eventId }: { eventId: string }) {
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      console.log("WS received:", data);
       if (data.type === "seat_updated") {
         setSeats((prev) =>
           prev.map((s) =>
-            s.id === data.seatId ? { ...s, status: data.status } : s,
+            s.id === data.seatId
+              ? {
+                  ...s,
+                  status: data.status,
+                  held_until: data.heldUntil ?? null,
+                }
+              : s,
           ),
         );
       }
@@ -50,6 +58,11 @@ export default function SeatMap({ eventId }: { eventId: string }) {
 
     return () => socket.close();
   }, [eventId]);
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleSeatClick(seat: Seat) {
     if (seat.status !== "available") return;
@@ -64,8 +77,13 @@ export default function SeatMap({ eventId }: { eventId: string }) {
     );
 
     if (res.ok) {
+      const data = await res.json();
       setSeats((prev) =>
-        prev.map((s) => (s.id === seat.id ? { ...s, status: "held" } : s)),
+        prev.map((s) =>
+          s.id === seat.id
+            ? { ...s, status: "held", held_until: data.heldUntil }
+            : s,
+        ),
       );
     } else {
       const data = await res.json();
@@ -81,6 +99,16 @@ export default function SeatMap({ eventId }: { eventId: string }) {
         a.label.localeCompare(b.label, undefined, { numeric: true }),
       ),
   })).filter((r) => r.seats.length > 0);
+
+  function formatCountdown(heldUntil: string) {
+    const secondsLeft = Math.max(
+      0,
+      Math.floor((new Date(heldUntil).getTime() - now) / 1000),
+    );
+    const minutes = Math.floor(secondsLeft / 60);
+    const seconds = secondsLeft % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  }
 
   const statusStyles: Record<Seat["status"], string> = {
     available:
@@ -156,6 +184,28 @@ export default function SeatMap({ eventId }: { eventId: string }) {
             <span className="w-3 h-3 rounded-sm bg-[#B4463F]" /> Sold
           </span>
         </div>
+        {seats.some((s) => s.status === "held" && s.held_until) && (
+          <div className="mt-8 border-t border-white/10 pt-6">
+            <h3 className="text-xs tracking-[0.15em] text-[#9A9AA2] mb-3">
+              currently held
+            </h3>
+            <ul className="space-y-1.5 text-sm">
+              {seats
+                .filter((s) => s.status === "held" && s.held_until)
+                .map((s) => (
+                  <li
+                    key={s.id}
+                    className="flex justify-between text-[#C7C7CE]"
+                  >
+                    <span>Seat {s.label}</span>
+                    <span className="tabular-nums text-[#E8A33D]">
+                      {formatCountdown(s.held_until!)}
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
