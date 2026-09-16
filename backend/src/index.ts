@@ -165,7 +165,7 @@ app.post("/seats/:seatId/confirm", async (req, res) => {
 
         await client.query("COMMIT");
         broadcastToEvent(seat.event_id.toString(), {
-            type: 'seat updated',
+            type: 'seat_updated',
             seatId:seat.id,
             status: 'sold'
         })
@@ -194,7 +194,7 @@ async function releaseExpiredHolds() {
 
         for (const seat  of result.rows) {
             broadcastToEvent(seat.event_id.toString(), {
-                type: "seat updated",
+                type: "seat_updated",
                 seatId: seat.id,
                 status: "available"
             })
