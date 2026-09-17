@@ -1,21 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-
-type Event = { id: number; name: string };
+import { useEvents } from "@/hooks/use-events";
 
 export default function Home() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const { data: events = [], isLoading, isError } = useEvents();
 
-  useEffect(() => {
-    async function fetchEvents() {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events`);
-      const data = await res.json();
-      setEvents(data);
-    }
-    fetchEvents();
-  }, []);
+  if (isLoading) {
+    return (
+      <main className="p-6">
+        <h1 className="text-2xl font-bold mb-4">Upcoming Events</h1>
+        <p className="text-[#9A9AA2]">Loading events…</p>
+      </main>
+    );
+  }
+
+  if (isError) {
+    return (
+      <main className="p-6">
+        <h1 className="text-2xl font-bold mb-4">Upcoming Events</h1>
+        <p className="text-red-400">Failed to load events.</p>
+      </main>
+    );
+  }
 
   return (
     <main className="p-6">

@@ -2,93 +2,31 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-
-type Seat = {
-  id: number;
-  event_id: number;
-  label: string;
-  status: "available" | "held" | "sold";
-  held_by: string | null;
-  held_until: string | null;
-};
-
-const CURRENT_USER = "ola";
+import { useSeats, useHoldSeat } from "@/hooks/use-seats";
+import { useSeatWebSocket } from "@/hooks/use-seat-websocket";
+import type { Seat } from "@/lib/types";
 
 const ROW_ORDER = ["A", "B", "C", "D", "E"];
 
 export default function SeatMap({ eventId }: { eventId: string }) {
-  const [seats, setSeats] = useState<Seat[]>([]);
+  const { data: seats = [], isLoading } = useSeats(eventId);
   const [now, setNow] = useState(() => Date.now());
 
-  useEffect(() => {
-    async function fetchSeats() {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/events/${eventId}/seats`,
-      );
-      const data = await res.json();
-      setSeats(data);
-    }
-    fetchSeats();
-  }, [eventId]);
+  // WebSocket real-time updates → patches React Query cache
+  useSeatWebSocket(eventId);
 
-  useEffect(() => {
-    const socket = new WebSocket(process.env.NEXT_PUBLIC_WS_URL!);
+  // Hold seat mutation
+  const holdMutation = useHoldSeat(eventId);
 
-    socket.onopen = () => {
-      socket.send(JSON.stringify({ type: "join", eventId }));
-    };
-
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("WS received:", data);
-      if (data.type === "seat_updated") {
-        setSeats((prev) =>
-          prev.map((s) =>
-            s.id === data.seatId
-              ? {
-                  ...s,
-                  status: data.status,
-                  held_until: data.heldUntil ?? null,
-                }
-              : s,
-          ),
-        );
-      }
-    };
-
-    return () => socket.close();
-  }, [eventId]);
-
+  // Countdown timer
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  async function handleSeatClick(seat: Seat) {
+  function handleSeatClick(seat: Seat) {
     if (seat.status !== "available") return;
-
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/seats/${seat.id}/hold`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: CURRENT_USER }),
-      },
-    );
-
-    if (res.ok) {
-      const data = await res.json();
-      setSeats((prev) =>
-        prev.map((s) =>
-          s.id === seat.id
-            ? { ...s, status: "held", held_until: data.heldUntil }
-            : s,
-        ),
-      );
-    } else {
-      const data = await res.json();
-      alert(data.error || "Could not hold seat");
-    }
+    holdMutation.mutate(seat.id);
   }
 
   const seatsByRow = ROW_ORDER.map((row) => ({
@@ -116,6 +54,14 @@ export default function SeatMap({ eventId }: { eventId: string }) {
     held: "bg-[#5B5E66] cursor-not-allowed opacity-70",
     sold: "bg-[#B4463F] cursor-not-allowed opacity-70",
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#17171B] text-[#E9E9EC] flex items-center justify-center">
+        <p className="text-[#9A9AA2]">Loading seats…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#17171B] text-[#E9E9EC] flex flex-col items-center px-4 py-10 sm:py-14">
@@ -184,6 +130,8 @@ export default function SeatMap({ eventId }: { eventId: string }) {
             <span className="w-3 h-3 rounded-sm bg-[#B4463F]" /> Sold
           </span>
         </div>
+
+        {/* Held seats countdown */}
         {seats.some((s) => s.status === "held" && s.held_until) && (
           <div className="mt-8 border-t border-white/10 pt-6">
             <h3 className="text-xs tracking-[0.15em] text-[#9A9AA2] mb-3">
