@@ -13,6 +13,13 @@ CREATE TABLE seats (
   UNIQUE(event_id, label)
 );
 
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 INSERT INTO events (name) VALUES ('Test Concert');
 
 INSERT INTO seats (event_id, label)
