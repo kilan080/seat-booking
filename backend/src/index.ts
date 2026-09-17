@@ -92,9 +92,9 @@ app.get("/events", async (req, res) => {
   res.json(result.rows);
 });
 
-app.post("/seats/:seatId/hold", async (req, res) =>{
+app.post("/seats/:seatId/hold", requireAuth, async (req: AuthedRequest, res) => {
     const { seatId } = req.params;
-    const { userId } = req.body;
+    const userId = req.userId;
 
     const client = await pool.connect();
     try {
@@ -144,9 +144,9 @@ app.post("/seats/:seatId/hold", async (req, res) =>{
     }
 })
 
-app.post("/seats/:seatId/confirm", async (req, res) => {
+app.post("/seats/:seatId/confirm", requireAuth, async (req: AuthedRequest, res) => {
     const { seatId } = req.params;
-    const { userId } = req.body;
+    const userId = req.userId;
 
     const client = await pool.connect();
 
