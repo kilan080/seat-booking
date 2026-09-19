@@ -17,10 +17,11 @@ export async function fetchSeats(eventId: string): Promise<Seat[]> {
 export async function holdSeat(
   seatId: number,
   userId: string,
+  token: string
 ): Promise<{ success: boolean; seatId: number; heldUntil: string }> {
   const res = await fetch(`${API_URL}/seats/${seatId}/hold`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, },
     body: JSON.stringify({ userId }),
   });
 
@@ -31,4 +32,37 @@ export async function holdSeat(
   }
 
   return data;
+}
+
+export async function signup(
+  email: string,
+  password: string
+): Promise<{ user: { id: number; email: string } }> {
+  const res = await fetch(`${API_URL}/auth/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || "Could not sign up");
+  }
+
+  return res.json();
+}
+
+export async function login (email: string, password: string):Promise<{ token: string; user: { id: number, email: string } }> {
+  const res = await fetch(`${API_URL}/auth/login`, { 
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if(!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error  || "Could not lofin");
+  }
+
+  return res.json();
 }
