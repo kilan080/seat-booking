@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSeats, holdSeat } from "@/lib/api";
 import type { Seat } from "@/lib/types";
+import { useAuthStore } from "@/store/auth-store";
 
-const CURRENT_USER = "ola";
+// const CURRENT_USER = "ola";
 
 /**
  * Fetches seats for an event via React Query.
@@ -19,24 +20,28 @@ export function useSeats(eventId: string) {
  * Mutation hook for holding a seat. On success, patches the
  * React Query cache directly for immediate UI feedback.
  */
+
 export function useHoldSeat(eventId: string) {
   const queryClient = useQueryClient();
+  const token = useAuthStore((state) => state.token)
 
   return useMutation({
-    mutationFn: (seatId: number) => holdSeat(seatId, CURRENT_USER),
+    mutationFn: ({ seatId, userId }: { seatId: number; userId: string }) =>
+      holdSeat(seatId, userId, token!),
 
     onSuccess: (data) => {
-      queryClient.setQueryData<Seat[]>(["seats", eventId], (prev) =>
-        prev?.map((s) =>
+      queryClient.setQueryData<Seat[]>(["seats", eventId], (prev) => {
+        if (!prev) return prev;
+        return prev.map((s) =>
           s.id === data.seatId
-            ? { ...s, status: "held" as const, held_until: data.heldUntil }
-            : s,
-        ),
-      );
+            ? { ...s, status: "held", held_until: data.heldUntil }
+            : s
+        );
+      });
     },
 
-    onError: (error: Error) => {
-      alert(error.message);
+    onError: (error) => {
+      alert(error.message || "Could not hold seat");
     },
   });
 }

@@ -1,11 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Seat } from "@/lib/types";
+import { Seat } from "@/lib/types";
 
-/**
- * Connects to the WebSocket for a given event and patches
- * React Query's cache directly when `seat_updated` messages arrive.
- */
 export function useSeatWebSocket(eventId: string) {
   const queryClient = useQueryClient();
 
@@ -20,17 +16,14 @@ export function useSeatWebSocket(eventId: string) {
       const data = JSON.parse(event.data);
 
       if (data.type === "seat_updated") {
-        queryClient.setQueryData<Seat[]>(["seats", eventId], (prev) =>
-          prev?.map((s) =>
+        queryClient.setQueryData<Seat[]>(["seats", eventId], (prev) => {
+          if (!prev) return prev;
+          return prev.map((s) =>
             s.id === data.seatId
-              ? {
-                  ...s,
-                  status: data.status,
-                  held_until: data.heldUntil ?? null,
-                }
-              : s,
-          ),
-        );
+              ? { ...s, status: data.status, held_until: data.heldUntil ?? null }
+              : s
+          );
+        });
       }
     };
 
