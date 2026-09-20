@@ -12,5 +12,19 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  backend:
+    build: ./backend
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgresql://seatbooking:devpassword@postgres:5432/seatbooking
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 4000
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend/src:/app/src
+
 volumes:
   pgdata:
