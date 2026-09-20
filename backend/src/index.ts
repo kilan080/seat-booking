@@ -94,7 +94,8 @@ app.get("/events", async (req, res) => {
 
 app.post("/seats/:seatId/hold", requireAuth, async (req: AuthedRequest, res) => {
     const { seatId } = req.params;
-    const userId = req.userId;
+    const userId = req.userId!;
+    
 
     const client = await pool.connect();
     try {
@@ -127,12 +128,13 @@ app.post("/seats/:seatId/hold", requireAuth, async (req: AuthedRequest, res) => 
 
         await client.query("COMMIT");
         broadcastToEvent(seat.event_id.toString(), {
-            type:"seat_updated",
+            type: "seat_updated",
             seatId: seat.id,
             status: "held",
-            heldUntil: heldUntil.toISOString()
+            heldUntil,
+            heldBy: userId.toString()
         });
-        res.json({ success: true, seatId, heldUntil });
+        res.json({ success: true, seatId, heldUntil, heldBy: userId.toString() });
     } catch (err) {
         await client.query("ROLLBACK");
         console.error(err);
@@ -146,7 +148,7 @@ app.post("/seats/:seatId/hold", requireAuth, async (req: AuthedRequest, res) => 
 
 app.post("/seats/:seatId/confirm", requireAuth, async (req: AuthedRequest, res) => {
     const { seatId } = req.params;
-    const userId = req.userId;
+    const userId = req.userId!;
 
     const client = await pool.connect();
 
@@ -174,7 +176,7 @@ app.post("/seats/:seatId/confirm", requireAuth, async (req: AuthedRequest, res) 
             });
         }
 
-        if(seat.held_by !== userId) {
+        if(seat.held_by !== userId.toString()) {
             await client.query("ROLLBACK");
             return res.status(403).json({
                 error: "This seat is held by someone else"
@@ -197,9 +199,10 @@ app.post("/seats/:seatId/confirm", requireAuth, async (req: AuthedRequest, res) 
         broadcastToEvent(seat.event_id.toString(), {
             type: 'seat_updated',
             seatId:seat.id,
+            held_by: userId.toString(),
             status: 'sold'
         })
-        res.json({ success: true, seatId, status: "sold"});
+        res.json({ success: true, seatId, status: "sold", held_by: userId.toString()});
     } catch (err) {
         await client.query("ROLLBACK");
         console.error(err);
