@@ -18,7 +18,9 @@ export async function holdSeat(
   seatId: number,
   userId: string,
   token: string
-): Promise<{ success: boolean; seatId: number; heldUntil: string }> {
+): Promise<{
+  heldBy: string | null; success: boolean; seatId: number; heldUntil: string 
+}> {
   const res = await fetch(`${API_URL}/seats/${seatId}/hold`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, },
@@ -62,6 +64,29 @@ export async function login (email: string, password: string):Promise<{ token: s
   if(!res.ok) {
     const data = await res.json();
     throw new Error(data.error  || "Could not lofin");
+  }
+
+  return res.json();
+}
+
+
+export async function confirmSeat(
+  seatId: number,
+  userId: string,
+  token: string
+): Promise<{ success: boolean; seatId: number; status: string }> {
+  const res = await fetch(`${API_URL}/seats/${seatId}/confirm`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ userId }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || "Could not confirm seat");
   }
 
   return res.json();

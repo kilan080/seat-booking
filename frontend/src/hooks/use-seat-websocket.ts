@@ -20,7 +20,7 @@ export function useSeatWebSocket(eventId: string) {
           if (!prev) return prev;
           return prev.map((s) =>
             s.id === data.seatId
-              ? { ...s, status: data.status, held_until: data.heldUntil ?? null }
+              ? { ...s, status: data.status, held_until: data.heldUntil ?? null, held_by: data.heldBy ?? null }
               : s
           );
         });
