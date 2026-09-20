@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useSeats, useHoldSeat } from "@/hooks/use-seats";
+import { useSeats, useHoldSeat, useConfirmSeat } from "@/hooks/use-seats";
 import { useSeatWebSocket } from "@/hooks/use-seat-websocket";
 import { Seat } from "@/lib/types";
 import { useAuthStore } from "@/store/auth-store";
@@ -14,6 +14,7 @@ export default function SeatMap({ eventId }: { eventId: string }) {
   const holdMutation = useHoldSeat(eventId);
   const user = useAuthStore((state) => state.user);
   useSeatWebSocket(eventId);
+  const confirmMutation = useConfirmSeat(eventId);
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -55,6 +56,11 @@ export default function SeatMap({ eventId }: { eventId: string }) {
     held: "bg-[#5B5E66] cursor-not-allowed opacity-70",
     sold: "bg-[#B4463F] cursor-not-allowed opacity-70",
   };
+
+  function handleConfirmClick(seat: Seat) {
+    if (!user) return;
+    confirmMutation.mutate({ seatId: seat.id, userId: user.email });
+  }
 
   return (
     <div className="min-h-screen bg-[#17171B] text-[#E9E9EC] flex flex-col items-center px-4 py-10 sm:py-14">
@@ -142,17 +148,31 @@ export default function SeatMap({ eventId }: { eventId: string }) {
             <ul className="space-y-1.5 text-sm">
               {seats
                 .filter((s) => s.status === "held" && s.held_until)
-                .map((s) => (
-                  <li
-                    key={s.id}
-                    className="flex justify-between text-[#C7C7CE]"
-                  >
-                    <span>Seat {s.label}</span>
-                    <span className="tabular-nums text-[#E8A33D]">
-                      {formatCountdown(s.held_until!)}
-                    </span>
-                  </li>
-                ))}
+                .map((s) => {
+                  const isMine = user && String(user.id) === s.held_by;
+                  return (
+                    <li
+                      key={s.id}
+                      className="flex justify-between items-center text-[#C7C7CE]"
+                    >
+                      <span>Seat {s.label}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="tabular-nums text-[#E8A33D]">
+                          {formatCountdown(s.held_until!)}
+                        </span>
+                        {isMine && (
+                          <button
+                            onClick={() => handleConfirmClick(s)}
+                            disabled={confirmMutation.isPending}
+                            className="text-xs px-2 py-1 rounded bg-[#3E8E63] hover:bg-[#4CA876] disabled:opacity-50"
+                          >
+                            Confirm
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
             </ul>
           </div>
         )}
