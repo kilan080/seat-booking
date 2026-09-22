@@ -40,7 +40,7 @@ export default function LoginPage() {
     setLoading(true);
 
     const toastId = toast.loading(
-      mode === "login" ? "Logging in..." : "Creating account..."
+      mode === "login" ? "Logging in..." : "Creating account...",
     );
 
     try {
@@ -77,30 +77,36 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth-page">
+    <div className="relative min-h-screen flex items-center justify-center p-6 bg-[#0c0c10] font-sans">
       {/* Static subtle background glow */}
-      <div className="auth-bg-glow" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_30%,rgba(232,163,61,0.08)_0%,transparent_60%),radial-gradient(circle_at_80%_80%,rgba(62,142,99,0.08)_0%,transparent_50%)]" />
 
-      <div className="auth-container">
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 w-full max-w-105 md:max-w-225 rounded-2xl overflow-hidden border border-white/8 bg-[#14141a] shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
         {/* ── Left Panel: Branding ── */}
-        <div className="auth-brand-panel">
-          <div className="auth-brand-grid" />
-          <div className="auth-brand-content">
-            <div className="auth-brand-icon">
+        <div className="hidden md:flex relative flex-col justify-center px-10 py-12 bg-linear-to-br from-[rgba(62,142,99,0.12)] to-[rgba(232,163,61,0.08)] border-r border-white/6">
+          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-size-[32px_32px]" />
+          <div className="relative z-10">
+            <div className="inline-flex items-center justify-center w-13 h-13 rounded-xl bg-linear-to-br from-[#3e8e63] to-[#2a6b47] mb-6 shadow-[0_4px_16px_rgba(62,142,99,0.25)]">
               <Ticket className="w-7 h-7 text-white" />
             </div>
-            <h2 className="auth-brand-title">SeatBooking</h2>
-            <p className="auth-brand-tagline">
-              Reserve your perfect seat for any live event. Instant confirmation & seamless booking.
+            <h2 className="text-[1.75rem] font-bold tracking-[-0.02em] text-[#f0f0f4] mb-2">
+              SeatBooking
+            </h2>
+            <p className="text-[0.9rem] leading-relaxed text-[#9a9aa8] mb-8">
+              Reserve your perfect seat for any live event. Instant confirmation
+              & seamless booking.
             </p>
 
-            <div className="auth-brand-features">
+            <div className="flex flex-col gap-[0.85rem]">
               {[
                 "Real-time seat availability map",
                 "Instant confirmation & digital tickets",
                 "Secure & transparent checkout",
               ].map((feature) => (
-                <div key={feature} className="auth-brand-feature">
+                <div
+                  key={feature}
+                  className="flex items-center gap-3 text-[0.85rem] text-[#b0b0ba]"
+                >
                   <CheckCircle2 className="w-4 h-4 text-[#3e8e63] shrink-0" />
                   <span>{feature}</span>
                 </div>
@@ -110,13 +116,17 @@ export default function LoginPage() {
         </div>
 
         {/* ── Right Panel: Form ── */}
-        <div className="auth-form-panel">
-          <div className="auth-form-wrapper">
+        <div className="flex items-center justify-center px-10 py-12 bg-[#14141a]">
+          <div className="w-full max-w-85">
             {/* Mode Switcher Tabs */}
-            <div className="auth-tabs">
+            <div className="flex bg-white/4 rounded-lg p-0.75 mb-7 border border-white/4">
               <button
                 type="button"
-                className={`auth-tab ${mode === "login" ? "auth-tab--active" : ""}`}
+                className={`flex-1 py-2 border-0 rounded-md text-[0.85rem] font-medium cursor-pointer ${
+                  mode === "login"
+                    ? "bg-white/9 text-[#f0f0f4]"
+                    : "bg-transparent text-[#7a7a88] hover:text-[#c0c0cc]"
+                }`}
                 onClick={() => switchMode("login")}
                 id="auth-tab-login"
               >
@@ -124,7 +134,11 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                className={`auth-tab ${mode === "signup" ? "auth-tab--active" : ""}`}
+                className={`flex-1 py-2 border-0 rounded-md text-[0.85rem] font-medium cursor-pointer ${
+                  mode === "signup"
+                    ? "bg-white/9 text-[#f0f0f4]"
+                    : "bg-transparent text-[#7a7a88] hover:text-[#c0c0cc]"
+                }`}
                 onClick={() => switchMode("signup")}
                 id="auth-tab-signup"
               >
@@ -132,10 +146,10 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <h1 className="auth-heading">
+            <h1 className="text-[1.4rem] font-bold tracking-[-0.01em] text-[#f0f0f4] mb-[0.3rem]">
               {mode === "login" ? "Welcome back" : "Create your account"}
             </h1>
-            <p className="auth-subheading">
+            <p className="text-[0.825rem] text-[#7a7a88] mb-6 leading-[1.45]">
               {mode === "login"
                 ? "Enter your details to sign in to your account"
                 : "Get started in seconds with a free account"}
@@ -143,20 +157,30 @@ export default function LoginPage() {
 
             {/* Error Notification Bar */}
             {error && (
-              <div className="auth-error-banner" role="alert">
+              <div
+                className="flex items-center gap-2 py-[0.65rem] px-[0.85rem] rounded-lg bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-[#f87171] text-[0.82rem] mb-5"
+                role="alert"
+              >
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="auth-form" id="auth-form">
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col gap-[1.15rem]"
+              id="auth-form"
+            >
               {/* Email Input */}
-              <div className="auth-field">
-                <label htmlFor="auth-email" className="auth-label">
+              <div className="flex flex-col gap-[0.35rem]">
+                <label
+                  htmlFor="auth-email"
+                  className="text-[0.78rem] font-medium text-[#a0a0ac]"
+                >
                   Email address
                 </label>
-                <div className="auth-input-wrapper">
-                  <Mail className="auth-input-icon" />
+                <div className="relative flex items-center group">
+                  <Mail className="absolute left-3 w-4 h-4 text-[#5a5a68] pointer-events-none group-focus-within:text-[#e8a33d]" />
                   <input
                     ref={emailRef}
                     id="auth-email"
@@ -166,18 +190,21 @@ export default function LoginPage() {
                     required
                     placeholder="name@example.com"
                     autoComplete="email"
-                    className="auth-input"
+                    className="w-full py-[0.65rem] pr-[0.85rem] pl-[2.4rem] border border-white/8 rounded-lg bg-white/3 text-[#e9e9ec] text-[0.875rem] outline-none placeholder:text-[#4a4a56] focus:border-[rgba(232,163,61,0.5)] focus:bg-white/5 focus:shadow-[0_0_0_3px_rgba(232,163,61,0.1)]"
                   />
                 </div>
               </div>
 
               {/* Password Input with Toggle Icon */}
-              <div className="auth-field">
-                <label htmlFor="auth-password" className="auth-label">
+              <div className="flex flex-col gap-[0.35rem]">
+                <label
+                  htmlFor="auth-password"
+                  className="text-[0.78rem] font-medium text-[#a0a0ac]"
+                >
                   Password
                 </label>
-                <div className="auth-input-wrapper">
-                  <Lock className="auth-input-icon" />
+                <div className="relative flex items-center group">
+                  <Lock className="absolute left-3 w-4 h-4 text-[#5a5a68] pointer-events-none group-focus-within:text-[#e8a33d]" />
                   <input
                     id="auth-password"
                     type={showPassword ? "text" : "password"}
@@ -185,15 +212,21 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    placeholder={mode === "signup" ? "At least 8 characters" : "••••••••"}
-                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                    className="auth-input auth-input--password"
+                    placeholder={
+                      mode === "signup" ? "At least 8 characters" : "••••••••"
+                    }
+                    autoComplete={
+                      mode === "signup" ? "new-password" : "current-password"
+                    }
+                    className="w-full py-[0.65rem] pr-10 pl-[2.4rem] border border-white/8 rounded-lg bg-white/3 text-[#e9e9ec] text-[0.875rem] outline-none placeholder:text-[#4a4a56] focus:border-[rgba(232,163,61,0.5)] focus:bg-white/5 focus:shadow-[0_0_0_3px_rgba(232,163,61,0.1)]"
                   />
                   <button
                     type="button"
-                    className="auth-eye-btn"
+                    className="absolute right-1.5 flex items-center justify-center w-8 h-8 border-0 rounded-md bg-transparent cursor-pointer text-[#6b6b7b] hover:text-[#e9e9ec] hover:bg-white/6"
                     onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                     tabIndex={-1}
                     id="auth-toggle-password"
                   >
@@ -205,7 +238,9 @@ export default function LoginPage() {
                   </button>
                 </div>
                 {mode === "signup" && (
-                  <p className="auth-hint">Must contain at least 8 characters</p>
+                  <p className="text-[0.725rem] text-[#5a5a68] m-0">
+                    Must contain at least 8 characters
+                  </p>
                 )}
               </div>
 
@@ -213,7 +248,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="auth-submit"
+                className="flex items-center justify-center gap-[0.4rem] w-full py-[0.7rem] px-5 mt-[0.35rem] border-0 rounded-lg bg-[#3e8e63] text-white text-[0.875rem] font-semibold cursor-pointer hover:enabled:bg-[#4ca876] disabled:opacity-60 disabled:cursor-not-allowed"
                 id="auth-submit-btn"
               >
                 {loading ? (
@@ -223,7 +258,9 @@ export default function LoginPage() {
                   </>
                 ) : (
                   <>
-                    <span>{mode === "login" ? "Sign In" : "Create Account"}</span>
+                    <span>
+                      {mode === "login" ? "Sign In" : "Create Account"}
+                    </span>
                     <ChevronRight className="w-4 h-4" />
                   </>
                 )}
@@ -231,13 +268,13 @@ export default function LoginPage() {
             </form>
 
             {/* Switch Mode Link */}
-            <p className="auth-footer">
+            <p className="text-center mt-6 text-[0.8rem] text-[#7a7a88]">
               {mode === "login" ? (
                 <>
                   Don&apos;t have an account?{" "}
                   <button
                     type="button"
-                    className="auth-footer-link"
+                    className="bg-transparent border-0 text-[#e8a33d] font-semibold cursor-pointer p-0 hover:underline"
                     onClick={() => switchMode("signup")}
                   >
                     Sign up
@@ -248,7 +285,7 @@ export default function LoginPage() {
                   Already have an account?{" "}
                   <button
                     type="button"
-                    className="auth-footer-link"
+                    className="bg-transparent border-0 text-[#e8a33d] font-semibold cursor-pointer p-0 hover:underline"
                     onClick={() => switchMode("login")}
                   >
                     Log in
@@ -259,333 +296,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-
-      {/* ── Scoped Styling (No Animations) ── */}
-      <style>{`
-        .auth-page {
-          position: relative;
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 1.5rem;
-          background-color: #0c0c10;
-          font-family: var(--font-geist-sans, system-ui, -apple-system, sans-serif);
-        }
-
-        .auth-bg-glow {
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at 50% 30%, rgba(232, 163, 61, 0.08) 0%, transparent 60%),
-                      radial-gradient(circle at 80% 80%, rgba(62, 142, 99, 0.08) 0%, transparent 50%);
-          pointer-events: none;
-        }
-
-        .auth-container {
-          position: relative;
-          z-index: 1;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          width: 100%;
-          max-width: 900px;
-          border-radius: 16px;
-          overflow: hidden;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          background: #14141a;
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-        }
-
-        .auth-brand-panel {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          padding: 3rem 2.5rem;
-          background: linear-gradient(145deg, rgba(62, 142, 99, 0.12) 0%, rgba(232, 163, 61, 0.08) 100%);
-          border-right: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .auth-brand-grid {
-          position: absolute;
-          inset: 0;
-          background-image:
-            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-          background-size: 32px 32px;
-          pointer-events: none;
-        }
-
-        .auth-brand-content {
-          position: relative;
-          z-index: 1;
-        }
-
-        .auth-brand-icon {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 52px;
-          height: 52px;
-          border-radius: 12px;
-          background: linear-gradient(135deg, #3e8e63, #2a6b47);
-          margin-bottom: 1.5rem;
-          box-shadow: 0 4px 16px rgba(62, 142, 99, 0.25);
-        }
-
-        .auth-brand-title {
-          font-size: 1.75rem;
-          font-weight: 700;
-          letter-spacing: -0.02em;
-          color: #f0f0f4;
-          margin: 0 0 0.5rem;
-        }
-
-        .auth-brand-tagline {
-          font-size: 0.9rem;
-          line-height: 1.6;
-          color: #9a9aa8;
-          margin: 0 0 2rem;
-        }
-
-        .auth-brand-features {
-          display: flex;
-          flex-direction: column;
-          gap: 0.85rem;
-        }
-
-        .auth-brand-feature {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          font-size: 0.85rem;
-          color: #b0b0ba;
-        }
-
-        .auth-form-panel {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 3rem 2.5rem;
-          background: #14141a;
-        }
-
-        .auth-form-wrapper {
-          width: 100%;
-          max-width: 340px;
-        }
-
-        .auth-tabs {
-          display: flex;
-          background: rgba(255, 255, 255, 0.04);
-          border-radius: 8px;
-          padding: 3px;
-          margin-bottom: 1.75rem;
-          border: 1px solid rgba(255, 255, 255, 0.04);
-        }
-
-        .auth-tab {
-          flex: 1;
-          padding: 0.5rem;
-          border: none;
-          border-radius: 6px;
-          background: transparent;
-          color: #7a7a88;
-          font-size: 0.85rem;
-          font-weight: 500;
-          cursor: pointer;
-          font-family: inherit;
-        }
-
-        .auth-tab:hover:not(.auth-tab--active) {
-          color: #c0c0cc;
-        }
-
-        .auth-tab--active {
-          background: rgba(255, 255, 255, 0.09);
-          color: #f0f0f4;
-        }
-
-        .auth-heading {
-          font-size: 1.4rem;
-          font-weight: 700;
-          letter-spacing: -0.01em;
-          color: #f0f0f4;
-          margin: 0 0 0.3rem;
-        }
-
-        .auth-subheading {
-          font-size: 0.825rem;
-          color: #7a7a88;
-          margin: 0 0 1.5rem;
-          line-height: 1.45;
-        }
-
-        .auth-error-banner {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.65rem 0.85rem;
-          border-radius: 8px;
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.2);
-          color: #f87171;
-          font-size: 0.82rem;
-          margin-bottom: 1.25rem;
-        }
-
-        .auth-form {
-          display: flex;
-          flex-direction: column;
-          gap: 1.15rem;
-        }
-
-        .auth-field {
-          display: flex;
-          flex-direction: column;
-          gap: 0.35rem;
-        }
-
-        .auth-label {
-          font-size: 0.78rem;
-          font-weight: 500;
-          color: #a0a0ac;
-        }
-
-        .auth-input-wrapper {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .auth-input-icon {
-          position: absolute;
-          left: 12px;
-          width: 16px;
-          height: 16px;
-          color: #5a5a68;
-          pointer-events: none;
-        }
-
-        .auth-input-wrapper:focus-within .auth-input-icon {
-          color: #e8a33d;
-        }
-
-        .auth-input {
-          width: 100%;
-          padding: 0.65rem 0.85rem 0.65rem 2.4rem;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, 0.03);
-          color: #e9e9ec;
-          font-size: 0.875rem;
-          font-family: inherit;
-          outline: none;
-        }
-
-        .auth-input::placeholder {
-          color: #4a4a56;
-        }
-
-        .auth-input:focus {
-          border-color: rgba(232, 163, 61, 0.5);
-          background: rgba(255, 255, 255, 0.05);
-          box-shadow: 0 0 0 3px rgba(232, 163, 61, 0.1);
-        }
-
-        .auth-input--password {
-          padding-right: 2.5rem;
-        }
-
-        .auth-eye-btn {
-          position: absolute;
-          right: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 32px;
-          height: 32px;
-          border: none;
-          border-radius: 6px;
-          background: transparent;
-          cursor: pointer;
-          color: #6b6b7b;
-        }
-
-        .auth-eye-btn:hover {
-          color: #e9e9ec;
-          background: rgba(255, 255, 255, 0.06);
-        }
-
-        .auth-hint {
-          font-size: 0.725rem;
-          color: #5a5a68;
-          margin: 0;
-        }
-
-        .auth-submit {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.4rem;
-          width: 100%;
-          padding: 0.7rem 1.25rem;
-          margin-top: 0.35rem;
-          border: none;
-          border-radius: 8px;
-          background: #3e8e63;
-          color: #ffffff;
-          font-size: 0.875rem;
-          font-weight: 600;
-          cursor: pointer;
-          font-family: inherit;
-        }
-
-        .auth-submit:hover:not(:disabled) {
-          background: #4ca876;
-        }
-
-        .auth-submit:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .auth-footer {
-          text-align: center;
-          margin-top: 1.5rem;
-          font-size: 0.8rem;
-          color: #7a7a88;
-        }
-
-        .auth-footer-link {
-          background: none;
-          border: none;
-          color: #e8a33d;
-          font-weight: 600;
-          cursor: pointer;
-          font-family: inherit;
-          font-size: inherit;
-          padding: 0;
-        }
-
-        .auth-footer-link:hover {
-          text-decoration: underline;
-        }
-
-        @media (max-width: 768px) {
-          .auth-container {
-            grid-template-columns: 1fr;
-            max-width: 420px;
-          }
-
-          .auth-brand-panel {
-            display: none;
-          }
-
-          .auth-form-panel {
-            padding: 2.25rem 1.5rem;
-          }
-        }
-      `}</style>
     </div>
   );
 }

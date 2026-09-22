@@ -53,8 +53,8 @@ export default function SeatMap({ eventId }: { eventId: string }) {
   const statusStyles: Record<Seat["status"], string> = {
     available:
       "bg-[#3E8E63] hover:bg-[#4CA876] focus-visible:outline-[#E8A33D]",
-    held: "bg-[#5B5E66] cursor-not-allowed opacity-70",
-    sold: "bg-[#B4463F] cursor-not-allowed opacity-70",
+    held: "bg-[#5B5E66] cursor-not-allowed opacity-60",
+    sold: "bg-[#B4463F] cursor-not-allowed opacity-60",
   };
 
   function handleConfirmClick(seat: Seat) {
