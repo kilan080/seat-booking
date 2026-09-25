@@ -161,13 +161,21 @@ export default function SeatMap({ eventId }: { eventId: string }) {
                           {formatCountdown(s.held_until!)}
                         </span>
                         {isMine && (
-                          <button
-                            onClick={() => handleConfirmClick(s)}
-                            disabled={confirmMutation.isPending}
-                            className="text-xs px-2 py-1 rounded bg-[#3E8E63] hover:bg-[#4CA876] disabled:opacity-50"
-                          >
-                            Confirm
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleConfirmClick(s)}
+                              disabled={confirmMutation.isPending}
+                              className="px-2 py-1 rounded-xl bg-[#3E8E63] hover:bg-[#4CA876] disabled:opacity-50"
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              className="bg-red-600 px-2 py-1 rounded-xl hover:bg-red-800"
+                              onClick={() => {}}
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         )}
                       </div>
                     </li>
