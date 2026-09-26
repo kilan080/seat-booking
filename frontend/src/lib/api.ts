@@ -91,3 +91,21 @@ export async function confirmSeat(
 
   return res.json();
 }
+
+export async function cancelSeat(seatId:number, userId: string, token:string): Promise<{success: boolean; seatId: number; status: string}> {
+  const res = await fetch(`${API_URL}/seats/${seatId}/cancel`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ userId }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || "Could not cancel seat");
+  }
+
+  return res.json();
+}

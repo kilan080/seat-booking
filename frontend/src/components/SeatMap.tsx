@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useSeats, useHoldSeat, useConfirmSeat } from "@/hooks/use-seats";
+import {
+  useSeats,
+  useHoldSeat,
+  useConfirmSeat,
+  useCancelSeat,
+} from "@/hooks/use-seats";
 import { useSeatWebSocket } from "@/hooks/use-seat-websocket";
 import { Seat } from "@/lib/types";
 import { useAuthStore } from "@/store/auth-store";
@@ -15,8 +20,10 @@ export default function SeatMap({ eventId }: { eventId: string }) {
   const user = useAuthStore((state) => state.user);
   useSeatWebSocket(eventId);
   const confirmMutation = useConfirmSeat(eventId);
+  const cancelMutation = useCancelSeat(eventId);
 
   const [now, setNow] = useState(() => Date.now());
+
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
@@ -29,6 +36,22 @@ export default function SeatMap({ eventId }: { eventId: string }) {
       return;
     }
     holdMutation.mutate({ seatId: seat.id, userId: user.email });
+  }
+
+  function handleCancelClick(seat: Seat) {
+    if (!user) {
+      alert("Please log in first");
+      return;
+    }
+
+    const isSeatMine = String(user.id) === seat.held_by;
+    if (!isSeatMine) {
+      alert("This is not your seat!");
+      return;
+    }
+
+    cancelMutation.mutate({ seatId: seat.id, userId: user.email });
+    console.log(String(user.id), seat.held_by);
   }
 
   const seatsByRow = ROW_ORDER.map((row) => ({
@@ -171,7 +194,7 @@ export default function SeatMap({ eventId }: { eventId: string }) {
                             </button>
                             <button
                               className="bg-red-600 px-2 py-1 rounded-xl hover:bg-red-800"
-                              onClick={() => {}}
+                              onClick={() => handleCancelClick(s)}
                             >
                               Cancel
                             </button>
