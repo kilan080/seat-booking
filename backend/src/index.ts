@@ -190,6 +190,7 @@ app.post("/seats/:seatId/cancel", requireAuth, async (req:AuthedRequest, res) =>
         });
         res.json({ success: true, seatId, status: 'available' });
     } catch (err) {
+        await client.query("ROLLBACK");
         console.error(err);
         res.status(500).json({
            error: "something went wrong" 
