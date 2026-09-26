@@ -146,6 +146,59 @@ app.post("/seats/:seatId/hold", requireAuth, async (req: AuthedRequest, res) => 
     }
 })
 
+app.post("/seats/:seatId/cancel", requireAuth, async (req:AuthedRequest, res) => {
+    const { seatId } = req.params;
+    const userId = req.userId!;
+
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const seatResult = await client.query(
+            "SELECT * FROM seats WHERE id = $1 FOR UPDATE", [seatId]
+        );
+        const seat = seatResult.rows[0];
+
+        if (!seat) {
+            await client.query("ROLLBACK");
+            return res.status(404).json({
+                error: "seat not found"
+            });
+        }
+
+        if (seat.status !== "held" || seat.held_by !== userId.toString()) {
+            await client.query("ROLLBACK");
+            return res.status(403).json({
+                error: "Seat not held by you"
+            })
+        }
+
+        await client.query(
+            "UPDATE seats SET status = 'available', held_by = null, held_until = null WHERE id = $1",
+            [seatId]
+        );
+
+        await client.query("COMMIT");
+
+        broadcastToEvent(seat.event_id.toString(), {
+            type: 'seat_updated',
+            seatId: seat.id,
+            status: 'available',
+            held_by: null,
+            held_until: null
+        });
+        res.json({ success: true, seatId, status: 'available' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+           error: "something went wrong" 
+        })
+    } finally {
+        client.release()
+    }
+})
+
 app.post("/seats/:seatId/confirm", requireAuth, async (req: AuthedRequest, res) => {
     const { seatId } = req.params;
     const userId = req.userId!;
