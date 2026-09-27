@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import {
   Armchair,
   Ticket,
@@ -17,22 +18,40 @@ import {
   Radio,
   Timer,
   LogIn,
+  LogOut,
   RefreshCw,
   AlertCircle,
   ChevronRight,
   Layers,
   Lock,
   Info,
+  Share2,
+  Plus,
+  X,
 } from "lucide-react";
 import { useEvents } from "@/hooks/use-events";
+import { useAuthStore } from "@/store/auth-store";
 
 export default function Home() {
   const { data: events = [], isLoading, isError, refetch } = useEvents();
   const [searchTerm, setSearchTerm] = useState("");
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
 
   const filteredEvents = events.filter((event) =>
     event.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  function handleShare(event: { id: number; name: string }) {
+    const url = `${window.location.origin}/events/${event.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success(`Copied event link for "${event.name}" to clipboard!`);
+  }
+
+  function handleLogout() {
+    logout();
+    toast.success("Logged out successfully");
+  }
 
   return (
     <div className="min-h-screen bg-[#0A0C10] text-[#E2E8F0] font-sans selection:bg-indigo-500 selection:text-white relative overflow-hidden">
@@ -82,13 +101,37 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all duration-200 hover:border-indigo-500/50"
-            >
-              <LogIn className="w-4 h-4 text-indigo-400" />
-              Sign In
-            </Link>
+            {user ? (
+              <div className="flex items-center gap-3">
+                {user.role === "admin" && (
+                  <Link
+                    href="/admin/create-event"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Create Event
+                  </Link>
+                )}
+                <span className="text-xs text-slate-400 hidden sm:inline">
+                  {user.email}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 transition-all cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all duration-200 hover:border-indigo-500/50"
+              >
+                <LogIn className="w-4 h-4 text-indigo-400" />
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -311,8 +354,20 @@ export default function Home() {
                 placeholder="Search events by name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-slate-900/90 border border-white/10 text-slate-200 placeholder:text-slate-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
               />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm("");
+                    toast("Search filter cleared", { icon: "🔍", duration: 1500 });
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -346,7 +401,7 @@ export default function Home() {
               </div>
               <button
                 onClick={() => refetch()}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 font-medium text-sm transition-colors border border-red-500/30"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 font-medium text-sm transition-colors border border-red-500/30 cursor-pointer"
               >
                 <RefreshCw className="w-4 h-4" /> Try Again
               </button>
@@ -354,13 +409,27 @@ export default function Home() {
           )}
 
           {!isLoading && !isError && filteredEvents.length === 0 && (
-            <div className="p-12 rounded-2xl bg-slate-900/40 border border-white/10 text-center space-y-3">
+            <div className="p-12 rounded-2xl bg-slate-900/40 border border-white/10 text-center space-y-4">
               <Search className="w-8 h-8 text-slate-500 mx-auto" />
-              <h3 className="text-lg font-bold text-white">No Events Found</h3>
-              <p className="text-slate-400 text-sm">
-                No events match your current search term &quot;{searchTerm}
-                &quot;.
-              </p>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-white">No Events Found</h3>
+                <p className="text-slate-400 text-sm">
+                  No events match your current search term &quot;{searchTerm}
+                  &quot;.
+                </p>
+              </div>
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm("");
+                    toast("Search reset", { icon: "🔍", duration: 1500 });
+                  }}
+                  className="px-4 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-semibold cursor-pointer transition-all"
+                >
+                  Clear Search Filter
+                </button>
+              )}
             </div>
           )}
 
@@ -398,15 +467,23 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-4 border-t border-white/5">
+                  <div className="mt-8 pt-4 border-t border-white/5 flex items-center gap-2">
                     <Link
                       href={`/events/${event.id}`}
-                      className="w-full py-3 px-4 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-200 hover:text-white border border-indigo-500/30 font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 group-hover:shadow-md group-hover:shadow-indigo-600/30"
+                      className="flex-1 py-3 px-4 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-200 hover:text-white border border-indigo-500/30 font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 group-hover:shadow-md group-hover:shadow-indigo-600/30"
                     >
                       <Armchair className="w-4 h-4" />
                       Select Seats & Book
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleShare(event)}
+                      title="Share Event Link"
+                      className="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               ))}

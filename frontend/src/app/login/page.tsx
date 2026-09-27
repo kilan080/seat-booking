@@ -37,6 +37,22 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      const msg = "Please enter a valid email address (e.g. name@example.com)";
+      setError(msg);
+      toast.error(msg, { id: "val-email" });
+      return;
+    }
+
+    if (mode === "signup" && password.length < 8) {
+      const msg = "Password must be at least 8 characters long";
+      setError(msg);
+      toast.error(msg, { id: "val-password" });
+      return;
+    }
+
     setLoading(true);
 
     const toastId = toast.loading(
@@ -74,6 +90,10 @@ export default function LoginPage() {
     setEmail("");
     setPassword("");
     setShowPassword(false);
+    toast(newMode === "signup" ? "Switched to account registration" : "Switched to account login", {
+      icon: newMode === "signup" ? "👤" : "🔑",
+      duration: 2000,
+    });
   }
 
   return (
@@ -187,6 +207,13 @@ export default function LoginPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onBlur={() => {
+                      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        toast.error("Please enter a valid email address", {
+                          id: "email-blur",
+                        });
+                      }
+                    }}
                     required
                     placeholder="name@example.com"
                     autoComplete="email"
@@ -210,6 +237,13 @@ export default function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => {
+                      if (mode === "signup" && password && password.length < 8) {
+                        toast.error("Password must be at least 8 characters", {
+                          id: "pw-blur",
+                        });
+                      }
+                    }}
                     required
                     minLength={8}
                     placeholder={

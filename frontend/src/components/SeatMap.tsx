@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import {
   useSeats,
   useHoldSeat,
@@ -18,6 +19,7 @@ export default function SeatMap({ eventId }: { eventId: string }) {
   const { data: seats = [] } = useSeats(eventId);
   const holdMutation = useHoldSeat(eventId);
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   useSeatWebSocket(eventId);
   const confirmMutation = useConfirmSeat(eventId);
   const cancelMutation = useCancelSeat(eventId);
@@ -30,28 +32,38 @@ export default function SeatMap({ eventId }: { eventId: string }) {
   }, []);
 
   function handleSeatClick(seat: Seat) {
-    if (seat.status !== "available") return;
-    if (!user) {
-      alert("Please log in to hold a seat!");
+    if (seat.status !== "available") {
+      toast.error(`Seat ${seat.label} is currently ${seat.status}`);
       return;
     }
-    holdMutation.mutate({ seatId: seat.id, userId: user.email });
+    if (!user) {
+      toast.error("Please log in to hold a seat!");
+      return;
+    }
+    toast.loading("Holding seat...", { id: "seat-hold" });
+    holdMutation.mutate(
+      { seatId: seat.id, userId: user.email },
+      { onSettled: () => toast.dismiss("seat-hold") }
+    );
   }
 
   function handleCancelClick(seat: Seat) {
     if (!user) {
-      alert("Please log in first");
+      toast.error("Please log in first!");
       return;
     }
 
     const isSeatMine = String(user.id) === seat.held_by;
     if (!isSeatMine) {
-      alert("This is not your seat!");
+      toast.error("This is not your seat!");
       return;
     }
 
-    cancelMutation.mutate({ seatId: seat.id, userId: user.email });
-    console.log(String(user.id), seat.held_by);
+    toast.loading("Cancelling hold...", { id: "seat-cancel" });
+    cancelMutation.mutate(
+      { seatId: seat.id, userId: user.email },
+      { onSettled: () => toast.dismiss("seat-cancel") }
+    );
   }
 
   const seatsByRow = ROW_ORDER.map((row) => ({
@@ -81,8 +93,15 @@ export default function SeatMap({ eventId }: { eventId: string }) {
   };
 
   function handleConfirmClick(seat: Seat) {
-    if (!user) return;
-    confirmMutation.mutate({ seatId: seat.id, userId: user.email });
+    if (!user) {
+      toast.error("Please log in to confirm booking");
+      return;
+    }
+    toast.loading("Confirming booking...", { id: "seat-confirm" });
+    confirmMutation.mutate(
+      { seatId: seat.id, userId: user.email },
+      { onSettled: () => toast.dismiss("seat-confirm") }
+    );
   }
 
   return (
@@ -96,11 +115,23 @@ export default function SeatMap({ eventId }: { eventId: string }) {
             ← Back to events
           </Link>
           {user ? (
-            <span className="text-xs text-[#9A9AA2]">{user.email}</span>
+            <div className="flex items-center gap-3 text-xs">
+              <span className="text-[#9A9AA2]">{user.email}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  logout();
+                  toast.success("Logged out successfully");
+                }}
+                className="text-red-400 hover:text-red-300 transition-colors cursor-pointer border-0 bg-transparent font-medium"
+              >
+                Logout
+              </button>
+            </div>
           ) : (
             <Link
               href="/login"
-              className="text-xs text-[#E8A33D] hover:underline"
+              className="text-xs text-[#E8A33D] hover:underline font-medium"
             >
               Log in
             </Link>
