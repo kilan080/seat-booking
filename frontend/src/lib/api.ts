@@ -54,7 +54,7 @@ export async function signup(
   return res.json();
 }
 
-export async function login (email: string, password: string):Promise<{ token: string; user: { id: number, email: string } }> {
+export async function login (email: string, password: string): Promise<{ token: string; user: { id: number; email: string; role: string } }> {
   const res = await fetch(`${API_URL}/auth/login`, { 
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -63,7 +63,7 @@ export async function login (email: string, password: string):Promise<{ token: s
 
   if(!res.ok) {
     const data = await res.json();
-    throw new Error(data.error  || "Could not lofin");
+    throw new Error(data.error  || "Could not login");
   }
 
   return res.json();
@@ -105,6 +105,24 @@ export async function cancelSeat(seatId:number, userId: string, token:string): P
   if (!res.ok) {
     const data = await res.json();
     throw new Error(data.error || "Could not cancel seat");
+  }
+
+  return res.json();
+}
+
+export async function createEvent(name: string, rows: number, seatsPerRow: number, token: string): Promise<{ event: { id: number; name: string } }> {
+  const res = await fetch(`${API_URL}/events`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ name, rows, seatsPerRow }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || "Could not create event");
   }
 
   return res.json();

@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import { confirmSeat, fetchSeats, holdSeat, cancelSeat } from "@/lib/api";
 import type { Seat } from "@/lib/types";
 import { useAuthStore } from "@/store/auth-store";
-
 
 /**
  * Fetches seats for an event via React Query.
@@ -19,7 +19,6 @@ export function useSeats(eventId: string) {
  * Mutation hook for holding a seat. On success, patches the
  * React Query cache directly for immediate UI feedback.
  */
-
 export function useHoldSeat(eventId: string) {
   const queryClient = useQueryClient();
   const token = useAuthStore((state) => state.token);
@@ -33,14 +32,15 @@ export function useHoldSeat(eventId: string) {
         if (!prev) return prev;
         return prev.map((s) =>
           s.id === data.seatId
-            ? { ...s, status: "held", held_until: data.heldUntil, held_by: data.heldBy, }
+            ? { ...s, status: "held", held_until: data.heldUntil, held_by: data.heldBy }
             : s
         );
       });
+      toast.success("Seat held! You have 2 minutes to confirm your booking.");
     },
 
     onError: (error) => {
-      alert(error.message || "Could not hold seat");
+      toast.error(error.message || "Could not hold seat");
     },
   });
 }
@@ -51,7 +51,7 @@ export function useCancelSeat(eventId: string) {
 
   return useMutation({
     mutationFn: ({ seatId, userId }: { seatId: number; userId: string }) =>
-      cancelSeat( seatId, userId, token!),
+      cancelSeat(seatId, userId, token!),
 
     onSuccess: (data) => {
       queryClient.setQueryData<Seat[]>(["seats", eventId], (prev) => {
@@ -60,10 +60,11 @@ export function useCancelSeat(eventId: string) {
           s.id === data.seatId ? { ...s, status: "available", held_until: null } : s
         );
       });
+      toast.success("Seat hold released.");
     },
 
     onError: (error) => {
-      alert(error.message || "Could not cancel seat");
+      toast.error(error.message || "Could not cancel seat");
     },
   });
 }
@@ -83,10 +84,11 @@ export function useConfirmSeat(eventId: string) {
           s.id === data.seatId ? { ...s, status: "sold", held_until: null } : s
         );
       });
+      toast.success("Seat booking confirmed! Ticket reserved 🎉");
     },
 
     onError: (error) => {
-      alert(error.message || "Could not confirm seat");
+      toast.error(error.message || "Could not confirm seat");
     },
   });
 }
