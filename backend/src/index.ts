@@ -104,6 +104,45 @@ app.get("/events", async (req, res) => {
   res.json(result.rows);
 });
 
+app.post("/events", requireAuth, requireAdmin, async (req: AuthedRequest, res) => {
+  const { name, rows, seatsPerRow } = req.body;
+
+  if (!name || !rows || !seatsPerRow) {
+    return res.status(400).json({ error: "name, rows, and seatsPerRow are required" });
+  }
+
+  if (rows > 26) {
+    return res.status(400).json({ error: "Maximum 26 rows (A-Z) supported" });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const eventResult = await client.query(
+      "INSERT INTO events (name) VALUES ($1) RETURNING id, name",
+      [name]
+    );
+    const event = eventResult.rows[0];
+
+    await client.query(
+      `INSERT INTO seats (event_id, label)
+       SELECT $1, chr(65 + row) || num
+       FROM generate_series(0, $2 - 1) AS row, generate_series(1, $3) AS num`,
+      [event.id, rows, seatsPerRow]
+    );
+
+    await client.query("COMMIT");
+    res.status(201).json({ event });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong" });
+  } finally {
+    client.release();
+  }
+});
+
 app.post("/seats/:seatId/hold", requireAuth, async (req: AuthedRequest, res) => {
     const { seatId } = req.params;
     const userId = req.userId!;
@@ -326,7 +365,7 @@ app.post("/auth/login", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT id, email, password_hash FROM users WHERE email = $1",
+      "SELECT id, email, password_hash, role FROM users WHERE email = $1",
       [email]
     );
     const user = result.rows[0];
