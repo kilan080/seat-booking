@@ -79,12 +79,12 @@ export default function Home() {
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a
               href="#events"
               className="hover:text-white transition-colors flex items-center gap-1.5"
             >
-              <Calendar className="w-4 h-4 text-indigo-400" /> Events
+              <Calendar className="w-4 h-4 text-indigo-600" /> Events
             </a>
             <a
               href="#how-it-works"
@@ -361,7 +361,10 @@ export default function Home() {
                   type="button"
                   onClick={() => {
                     setSearchTerm("");
-                    toast("Search filter cleared", { icon: "🔍", duration: 1500 });
+                    toast("Search filter cleared", {
+                      icon: "🔍",
+                      duration: 1500,
+                    });
                   }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
                 >
@@ -412,7 +415,9 @@ export default function Home() {
             <div className="p-12 rounded-2xl bg-slate-900/40 border border-white/10 text-center space-y-4">
               <Search className="w-8 h-8 text-slate-500 mx-auto" />
               <div className="space-y-1">
-                <h3 className="text-lg font-bold text-white">No Events Found</h3>
+                <h3 className="text-lg font-bold text-white">
+                  No Events Found
+                </h3>
                 <p className="text-slate-400 text-sm">
                   No events match your current search term &quot;{searchTerm}
                   &quot;.
