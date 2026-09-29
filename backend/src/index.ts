@@ -7,6 +7,8 @@ import http from "http";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
+import rateLimit from "express-rate-limit";
+
 
 
 dotenv.config();
@@ -21,6 +23,22 @@ interface AuthedRequest extends Request {
   userEmail?: string;
   userRole?: string;
 }
+
+const loginLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    message: { error: "Too many login attempts, try again in 15minutes time." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+const generalApiLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    message: { error: "Too many requests from this IP, slow down" },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 function requireAuth(req: AuthedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -143,7 +161,7 @@ app.post("/events", requireAuth, requireAdmin, async (req: AuthedRequest, res) =
   }
 });
 
-app.post("/seats/:seatId/hold", requireAuth, async (req: AuthedRequest, res) => {
+app.post("/seats/:seatId/hold", requireAuth, generalApiLimiter, async (req: AuthedRequest, res) => {
     const { seatId } = req.params;
     const userId = req.userId!;
     
@@ -197,7 +215,7 @@ app.post("/seats/:seatId/hold", requireAuth, async (req: AuthedRequest, res) => 
     }
 })
 
-app.post("/seats/:seatId/cancel", requireAuth, async (req:AuthedRequest, res) => {
+app.post("/seats/:seatId/cancel", requireAuth, generalApiLimiter, async (req:AuthedRequest, res) => {
     const { seatId } = req.params;
     const userId = req.userId!;
 
@@ -251,7 +269,7 @@ app.post("/seats/:seatId/cancel", requireAuth, async (req:AuthedRequest, res) =>
     }
 })
 
-app.post("/seats/:seatId/confirm", requireAuth, async (req: AuthedRequest, res) => {
+app.post("/seats/:seatId/confirm", requireAuth, generalApiLimiter, async (req: AuthedRequest, res) => {
     const { seatId } = req.params;
     const userId = req.userId!;
 
@@ -356,7 +374,7 @@ app.post("/auth/signup", async (req, res) => {
     
 })
 
-app.post("/auth/login", async (req, res) => {
+app.post("/auth/login", loginLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
