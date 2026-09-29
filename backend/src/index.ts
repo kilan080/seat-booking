@@ -8,6 +8,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
+import crypto from "crypto"
 
 
 
@@ -25,7 +26,7 @@ interface AuthedRequest extends Request {
 }
 
 const loginLimiter = rateLimit({
-    windowMs: 60 * 1000,
+    windowMs: 15 * 60 * 1000,
     max: 5,
     message: { error: "Too many login attempts, try again in 15minutes time." },
     standardHeaders: true,
@@ -397,17 +398,77 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET!,
-      { expiresIn: "7d" }
+      { expiresIn: "15m" }
     );
 
-    res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+    const refreshToken = crypto.randomBytes(64).toString("hex");
+    const refreshExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await pool.query(
+        "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)",
+        [user.id, refreshToken, refreshExpiresAt]
+    );
+
+    res.json({ accessToken, refreshToken, user: { id: user.id, email: user.email, role: user.role } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Something went wrong" });
   }
+});
+
+app.post("/auth/refresh", async(req, res) => {
+    const { refreshToken } = req.body;
+
+    if(!refreshToken) {
+        return res.status(400).json({error: "Refresh token required"})
+    }
+
+    try {
+        const result = await pool.query(
+            `SELECT rt.user_id, rt.expires_at, u.email, u.role
+            FROM refresh_tokens rt
+            JOIN users u ON u.id = rt.user_id
+            WHERE rt.token = $1`,
+            [refreshToken]
+        );
+        const record = result.rows[0];
+
+        if(!record) {
+            return res.status(401).json({
+                error:"Invalid or expired refresh token"
+            });
+        }
+
+        if (new Date(record.expires_at) < new Date()) {
+            await pool.query("DELETE FROM refresh_tokens WHERE token = $1", [refreshToken]);
+            return res.status(401).json({ error: "Refresh token expired" });
+        }
+
+        const newAccessToken = jwt.sign(
+            { userId: record.user_id, email: record.email, role: record.role },
+            process.env.JWT_SECRET!,
+            { expiresIn: "15m" }
+        );
+
+        res.json({ accessToken: newAccessToken });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Something went wrong" });
+    }
+});
+
+app.post("/auth/logout", async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (refreshToken) {
+    await pool.query("DELETE FROM refresh_tokens WHERE token = $1", [refreshToken]);
+  }
+
+  res.json({ success: true });
 });
 
 async function releaseExpiredHolds() {
