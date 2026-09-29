@@ -66,7 +66,7 @@ export default function LoginPage() {
       }
 
       const result = await loginApi(email, password);
-      login(result.token, result.user);
+      login(result.accessToken, result.refreshToken, result.user);
 
       if (mode === "login") {
         toast.success("Welcome back! Logged in successfully.", { id: toastId });
@@ -90,10 +90,15 @@ export default function LoginPage() {
     setEmail("");
     setPassword("");
     setShowPassword(false);
-    toast(newMode === "signup" ? "Switched to account registration" : "Switched to account login", {
-      icon: newMode === "signup" ? "👤" : "🔑",
-      duration: 2000,
-    });
+    toast(
+      newMode === "signup"
+        ? "Switched to account registration"
+        : "Switched to account login",
+      {
+        icon: newMode === "signup" ? "👤" : "🔑",
+        duration: 2000,
+      },
+    );
   }
 
   return (
@@ -238,7 +243,11 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onBlur={() => {
-                      if (mode === "signup" && password && password.length < 8) {
+                      if (
+                        mode === "signup" &&
+                        password &&
+                        password.length < 8
+                      ) {
                         toast.error("Password must be at least 8 characters", {
                           id: "pw-blur",
                         });

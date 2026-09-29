@@ -1,4 +1,5 @@
 import type { Event, Seat } from "./types";
+import { fetchWithAuth } from "./fetchWithAuth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -14,26 +15,19 @@ export async function fetchSeats(eventId: string): Promise<Seat[]> {
   return res.json();
 }
 
-export async function holdSeat(
-  seatId: number,
-  userId: string,
-  token: string
-): Promise<{
-  heldBy: string | null; success: boolean; seatId: number; heldUntil: string 
-}> {
-  const res = await fetch(`${API_URL}/seats/${seatId}/hold`, {
+export async function holdSeat(seatId: number, userId: string) {
+  const res = await fetchWithAuth(`${API_URL}/seats/${seatId}/hold`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ userId }),
   });
 
-  const data = await res.json();
-
   if (!res.ok) {
+    const data = await res.json();
     throw new Error(data.error || "Could not hold seat");
   }
 
-  return data;
+  return res.json();
 }
 
 export async function signup(
@@ -54,16 +48,19 @@ export async function signup(
   return res.json();
 }
 
-export async function login (email: string, password: string): Promise<{ token: string; user: { id: number; email: string; role: string } }> {
-  const res = await fetch(`${API_URL}/auth/login`, { 
+export async function login(
+  email: string,
+  password: string
+): Promise<{ accessToken: string; refreshToken: string; user: { id: number; email: string; role: string } }> {
+  const res = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
 
-  if(!res.ok) {
+  if (!res.ok) {
     const data = await res.json();
-    throw new Error(data.error  || "Could not login");
+    throw new Error(data.error || "Could not login");
   }
 
   return res.json();
@@ -72,15 +69,11 @@ export async function login (email: string, password: string): Promise<{ token: 
 
 export async function confirmSeat(
   seatId: number,
-  userId: string,
-  token: string
+  userId: string
 ): Promise<{ success: boolean; seatId: number; status: string }> {
-  const res = await fetch(`${API_URL}/seats/${seatId}/confirm`, {
+  const res = await fetchWithAuth(`${API_URL}/seats/${seatId}/confirm`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ userId }),
   });
 
@@ -92,13 +85,13 @@ export async function confirmSeat(
   return res.json();
 }
 
-export async function cancelSeat(seatId:number, userId: string, token:string): Promise<{success: boolean; seatId: number; status: string}> {
-  const res = await fetch(`${API_URL}/seats/${seatId}/cancel`, {
+export async function cancelSeat(
+  seatId: number,
+  userId: string
+): Promise<{ success: boolean; seatId: number; status: string }> {
+  const res = await fetchWithAuth(`${API_URL}/seats/${seatId}/cancel`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ userId }),
   });
 
@@ -110,13 +103,14 @@ export async function cancelSeat(seatId:number, userId: string, token:string): P
   return res.json();
 }
 
-export async function createEvent(name: string, rows: number, seatsPerRow: number, token: string): Promise<{ event: { id: number; name: string } }> {
-  const res = await fetch(`${API_URL}/events`, {
+export async function createEvent(
+  name: string,
+  rows: number,
+  seatsPerRow: number
+): Promise<{ event: { id: number; name: string } }> {
+  const res = await fetchWithAuth(`${API_URL}/events`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, rows, seatsPerRow }),
   });
 

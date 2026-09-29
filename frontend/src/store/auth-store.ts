@@ -2,26 +2,30 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 type User = {
-    role: string;
-    id: number;
-    email: string;
+  id: number;
+  email: string;
+  role: string;
 };
 
 type AuthState = {
-    token: string | null;
-    user: User | null;
-    login: (token: string, user: User) => void;
-    logout: () => void;
+  accessToken: string | null;
+  refreshToken: string | null;
+  user: User | null;
+  login: (accessToken: string, refreshToken: string, user: User) => void;
+  setAccessToken: (accessToken: string) => void;
+  logout: () => void;
 };
 
 export const useAuthStore = create<AuthState>()(
-    persist(
-        (set) => ({
-            token: null,
-            user: null,
-            login: (token, user) => set({ token, user }),
-            logout: () => set({ token: null, user: null }),
-        }),
-        { name: "seat-booking-auth",}    
-    )
-)
+  persist(
+    (set) => ({
+      accessToken: null,
+      refreshToken: null,
+      user: null,
+      login: (accessToken, refreshToken, user) => set({ accessToken, refreshToken, user }),
+      setAccessToken: (accessToken: string) => set({ accessToken }),
+      logout: () => set({ accessToken: null, refreshToken: null, user: null }),
+    }),
+    { name: "seat-booking-auth" }
+  )
+);
