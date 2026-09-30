@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { confirmSeat, fetchSeats, holdSeat, cancelSeat } from "@/lib/api";
 import type { Seat } from "@/lib/types";
-import { useAuthStore } from "@/store/auth-store";
 
 /**
  * Fetches seats for an event via React Query.
@@ -21,11 +20,10 @@ export function useSeats(eventId: string) {
  */
 export function useHoldSeat(eventId: string) {
   const queryClient = useQueryClient();
-  const token = useAuthStore((state) => state.token);
 
   return useMutation({
     mutationFn: ({ seatId, userId }: { seatId: number; userId: string }) =>
-      holdSeat(seatId, userId, token!),
+      holdSeat(seatId, userId),
 
     onSuccess: (data) => {
       queryClient.setQueryData<Seat[]>(["seats", eventId], (prev) => {
@@ -47,11 +45,10 @@ export function useHoldSeat(eventId: string) {
 
 export function useCancelSeat(eventId: string) {
   const queryClient = useQueryClient();
-  const token = useAuthStore((state) => state.token);
 
   return useMutation({
     mutationFn: ({ seatId, userId }: { seatId: number; userId: string }) =>
-      cancelSeat(seatId, userId, token!),
+      cancelSeat(seatId, userId),
 
     onSuccess: (data) => {
       queryClient.setQueryData<Seat[]>(["seats", eventId], (prev) => {
@@ -71,11 +68,10 @@ export function useCancelSeat(eventId: string) {
 
 export function useConfirmSeat(eventId: string) {
   const queryClient = useQueryClient();
-  const token = useAuthStore((state) => state.token);
 
   return useMutation({
     mutationFn: ({ seatId, userId }: { seatId: number; userId: string }) =>
-      confirmSeat(seatId, userId, token!),
+      confirmSeat(seatId, userId),
 
     onSuccess: (data) => {
       queryClient.setQueryData<Seat[]>(["seats", eventId], (prev) => {

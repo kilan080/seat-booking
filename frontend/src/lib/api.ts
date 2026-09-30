@@ -66,6 +66,14 @@ export async function login(
   return res.json();
 }
 
+export async function logout(refreshToken: string): Promise<void> {
+  await fetch(`${API_URL}/auth/logout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  });
+}
+
 
 export async function confirmSeat(
   seatId: number,
