@@ -67,6 +67,7 @@ export default function LoginPage() {
 
       const result = await loginApi(email, password);
       login(result.accessToken, result.refreshToken, result.user);
+      router.push("/");
 
       if (mode === "login") {
         toast.success("Welcome back! Logged in successfully.", { id: toastId });

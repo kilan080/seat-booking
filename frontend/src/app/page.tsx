@@ -31,12 +31,12 @@ import {
 } from "lucide-react";
 import { useEvents } from "@/hooks/use-events";
 import { useAuthStore } from "@/store/auth-store";
+import { logout as logoutApi } from "@/lib/api";
 
 export default function Home() {
   const { data: events = [], isLoading, isError, refetch } = useEvents();
   const [searchTerm, setSearchTerm] = useState("");
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
 
   const filteredEvents = events.filter((event) =>
     event.name.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -48,8 +48,12 @@ export default function Home() {
     toast.success(`Copied event link for "${event.name}" to clipboard!`);
   }
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    const refreshToken = useAuthStore.getState().refreshToken;
+    if (refreshToken) {
+      await logoutApi(refreshToken);
+    }
+    useAuthStore.getState().logout();
     toast.success("Logged out successfully");
   }
 
