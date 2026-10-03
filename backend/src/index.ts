@@ -123,6 +123,26 @@ app.get("/events", async (req, res) => {
   res.json(result.rows);
 });
 
+app.get("/bookings", requireAuth, async (req: AuthedRequest, res) => {
+  const userId = req.userId!;
+
+  try {
+    const result = await pool.query(
+      `SELECT s.id AS seat_id, s.label, e.id AS event_id, e.name AS event_name
+       FROM seats s
+       JOIN events e ON e.id = s.event_id
+       WHERE s.held_by = $1 AND s.status = 'sold'
+       ORDER BY e.name, s.label`,
+      [userId.toString()]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/events", requireAuth, requireAdmin, async (req: AuthedRequest, res) => {
   const { name, rows, seatsPerRow } = req.body;
 
