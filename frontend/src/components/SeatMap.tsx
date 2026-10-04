@@ -43,7 +43,7 @@ export default function SeatMap({ eventId }: { eventId: string }) {
     toast.loading("Holding seat...", { id: "seat-hold" });
     holdMutation.mutate(
       { seatId: seat.id, userId: user.email },
-      { onSettled: () => toast.dismiss("seat-hold") }
+      { onSettled: () => toast.dismiss("seat-hold") },
     );
   }
 
@@ -62,7 +62,7 @@ export default function SeatMap({ eventId }: { eventId: string }) {
     toast.loading("Cancelling hold...", { id: "seat-cancel" });
     cancelMutation.mutate(
       { seatId: seat.id, userId: user.email },
-      { onSettled: () => toast.dismiss("seat-cancel") }
+      { onSettled: () => toast.dismiss("seat-cancel") },
     );
   }
 
@@ -100,7 +100,7 @@ export default function SeatMap({ eventId }: { eventId: string }) {
     toast.loading("Confirming booking...", { id: "seat-confirm" });
     confirmMutation.mutate(
       { seatId: seat.id, userId: user.email },
-      { onSettled: () => toast.dismiss("seat-confirm") }
+      { onSettled: () => toast.dismiss("seat-confirm") },
     );
   }
 
@@ -114,6 +114,14 @@ export default function SeatMap({ eventId }: { eventId: string }) {
           >
             ← Back to events
           </Link>
+          {user && (
+            <Link
+              href="/bookings"
+              className="text-xs text-[#9A9AA2] hover:text-[#E9E9EC]"
+            >
+              My Bookings
+            </Link>
+          )}
           {user ? (
             <div className="flex items-center gap-3 text-xs">
               <span className="text-[#9A9AA2]">{user.email}</span>

@@ -3,6 +3,13 @@ import { fetchWithAuth } from "./fetchWithAuth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
+export type Booking = { 
+  seat_id: number;
+  label: string;
+  event_id: number;
+  event_name: string;
+};
+
 export async function fetchEvents(): Promise<Event[]> {
   const res = await fetch(`${API_URL}/events`);
   if (!res.ok) throw new Error("Failed to fetch events");
@@ -127,5 +134,11 @@ export async function createEvent(
     throw new Error(data.error || "Could not create event");
   }
 
+  return res.json();
+}
+
+export async function fetchMyBookings() : Promise<Booking[]> {
+  const res = await fetchWithAuth(`${API_URL}/bookings`);
+  if (!res.ok) throw new Error("Failed to fetch bookings");
   return res.json();
 }
