@@ -27,12 +27,12 @@ A full-stack, enterprise-grade real-time seat reservation platform designed to h
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology | Key Libraries / Frameworks |
-| :--- | :--- | :--- |
+| Layer        | Technology                                    | Key Libraries / Frameworks                                                                     |
+| :----------- | :-------------------------------------------- | :--------------------------------------------------------------------------------------------- |
 | **Frontend** | Next.js 16 (App Router), React 19, TypeScript | Tailwind CSS v4, Lucide Icons, `@tanstack/react-query`, `zustand` (persist), `react-hot-toast` |
-| **Backend** | Node.js, Express 5, TypeScript | `ws` (WebSockets), `pg` (PostgreSQL Client), `jsonwebtoken`, `bcrypt`, `express-rate-limit` |
-| **Database** | PostgreSQL 16 | Relational schema with Foreign Keys, Unique Constraints, Transaction locks |
-| **DevOps** | Docker & Docker Compose | Multi-stage build, containerized PostgreSQL 16 instance |
+| **Backend**  | Node.js, Express 5, TypeScript                | `ws` (WebSockets), `pg` (PostgreSQL Client), `jsonwebtoken`, `bcrypt`, `express-rate-limit`    |
+| **Database** | PostgreSQL 16                                 | Relational schema with Foreign Keys, Unique Constraints, Transaction locks                     |
+| **DevOps**   | Docker & Docker Compose                       | Multi-stage build, containerized PostgreSQL 16 instance                                        |
 
 ---
 
@@ -104,22 +104,26 @@ CREATE TABLE refresh_tokens (
 ## 🔗 REST API & WebSocket Protocol
 
 ### 🔓 Authentication Endpoints
+
 - `POST /auth/signup` — Create a new user account (`email`, `password`).
-- `POST /auth/login` — Authenticate and receive `accessToken`, `refreshToken`, and user payload. *(Rate limited to 5 attempts per 15 minutes)*.
+- `POST /auth/login` — Authenticate and receive `accessToken`, `refreshToken`, and user payload. _(Rate limited to 5 attempts per 15 minutes)_.
 - `POST /auth/refresh` — Exchange a valid `refreshToken` for a fresh `accessToken`.
 - `POST /auth/logout` — Invalidate and remove a `refreshToken`.
 
 ### 🎟️ Event Endpoints
+
 - `GET /events` — Retrieve all upcoming events.
 - `GET /events/:eventId/seats` — Retrieve all seats and current statuses for a specific event.
-- `POST /events` — *(Admin Only)* Create a new event and auto-generate seat rows (`name`, `rows`, `seatsPerRow`).
+- `POST /events` — _(Admin Only)_ Create a new event and auto-generate seat rows (`name`, `rows`, `seatsPerRow`).
 
-### 💺 Seat Management Endpoints *(Require Authentication)*
+### 💺 Seat Management Endpoints _(Require Authentication)_
+
 - `POST /seats/:seatId/hold` — Request a 2-minute temporary hold on an available seat.
 - `POST /seats/:seatId/cancel` — Cancel an active seat hold owned by the current user.
 - `POST /seats/:seatId/confirm` — Permanently confirm purchase of a held seat.
 
 ### 📡 WebSocket Protocol
+
 - **Endpoint**: `ws://localhost:4000`
 - **Join Event Room**: Send `{"type": "join", "eventId": "<eventId>"}`
 - **Server Broadcast Payload**:
@@ -138,6 +142,7 @@ CREATE TABLE refresh_tokens (
 ## ⚙️ Getting Started
 
 ### Prerequisites
+
 - **Node.js**: v18 or higher
 - **npm** or **yarn** or **pnpm**
 - **PostgreSQL**: v14+ OR **Docker & Docker Compose**
@@ -147,6 +152,7 @@ CREATE TABLE refresh_tokens (
 ### Method 1: Running with Docker Compose (Recommended)
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/your-username/seat-booking.git
    cd seat-booking
@@ -154,8 +160,9 @@ CREATE TABLE refresh_tokens (
 
 2. **Configure Environment Variables**:
    Create a `.env` file in the root directory or inside `backend/` and `frontend/`:
-   
+
    **Backend (`backend/.env`)**:
+
    ```env
    PORT=4000
    DATABASE_URL=postgresql://seatbooking:devpassword@localhost:5432/seatbooking
@@ -163,6 +170,7 @@ CREATE TABLE refresh_tokens (
    ```
 
    **Frontend (`frontend/.env.local`)**:
+
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:4000
    NEXT_PUBLIC_WS_URL=ws://localhost:4000
@@ -178,25 +186,31 @@ CREATE TABLE refresh_tokens (
 ### Method 2: Manual Local Setup
 
 #### 1. Setup Database
+
 Ensure PostgreSQL is running and execute `backend/schema.sql` to initialize tables and initial seed data:
+
 ```bash
 psql -U postgres -d seatbooking -f backend/schema.sql
 ```
 
 #### 2. Start the Backend Server
+
 ```bash
 cd backend
 npm install
 npm run dev
 ```
+
 The backend server will start on `http://localhost:4000`.
 
 #### 3. Start the Frontend Next.js App
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+
 Open [http://localhost:3000](http://localhost:3000) in your web browser.
 
 ---
@@ -229,3 +243,5 @@ One user successfully acquires the hold (`200 OK`), while the concurrent request
 ## 📜 License
 
 This project is licensed under the [ISC License](LICENSE).
+
+This project is done by devKilan
