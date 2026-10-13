@@ -144,15 +144,32 @@ app.get("/bookings", requireAuth, async (req: AuthedRequest, res) => {
 });
 
 app.post("/events", requireAuth, requireAdmin, async (req: AuthedRequest, res) => {
-  const { name, rows, seatsPerRow } = req.body;
+  const { name, rows, seatsPerRow, tiers } = req.body;
 
-  if (!name || !rows || !seatsPerRow) {
-    return res.status(400).json({ error: "name, rows, and seatsPerRow are required" });
+  if (!name || !rows || !seatsPerRow || !Array.isArray(tiers) || tiers.length === 0) {
+    return res.status(400).json({ error: "name, rows, seatsPerRow and tiers are required" });
   }
 
   if (rows > 26) {
     return res.status(400).json({ error: "Maximum 26 rows (A-Z) supported" });
   }
+
+  const validTiers = tiers.every(
+    (t: any) =>
+      Number.isInteger(t.rows) && t.rows > 0 &&
+      Number.isInteger(t.priceCents) && t.priceCents >= 0
+  );
+  if (!validTiers) {
+    return res.status(400).json({ error: "Each tier needs a positive row count and a non-negative integer price" });
+  }
+
+  const tierRowTotal = tiers.reduce((sum: number, t: any) => sum + t.rows, 0);
+  if (tierRowTotal !== rows) {
+    return res.status(400).json({ error: "Tier row counts must add up to the total number of rows" });
+  }
+
+  // Expand tiers into one price per row, e.g. [10000, 10000, 5000, 5000, 5000]
+  const rowPrices: number[] = tiers.flatMap((t: any) => Array(t.rows).fill(t.priceCents));
 
   const client = await pool.connect();
   try {
@@ -165,10 +182,10 @@ app.post("/events", requireAuth, requireAdmin, async (req: AuthedRequest, res) =
     const event = eventResult.rows[0];
 
     await client.query(
-      `INSERT INTO seats (event_id, label)
-       SELECT $1, chr(65 + row) || num
+      `INSERT INTO seats (event_id, label, price_cents)
+       SELECT $1, chr(65 + row) || num, ($4::int[])[row + 1]
        FROM generate_series(0, $2 - 1) AS row, generate_series(1, $3) AS num`,
-      [event.id, rows, seatsPerRow]
+      [event.id, rows, seatsPerRow, rowPrices]
     );
 
     await client.query("COMMIT");
