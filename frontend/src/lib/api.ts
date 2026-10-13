@@ -121,12 +121,13 @@ export async function cancelSeat(
 export async function createEvent(
   name: string,
   rows: number,
-  seatsPerRow: number
+  seatsPerRow: number,
+  tiers: { rows: number; priceCents: number }[]
 ): Promise<{ event: { id: number; name: string } }> {
   const res = await fetchWithAuth(`${API_URL}/events`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, rows, seatsPerRow }),
+    body: JSON.stringify({ name, rows, seatsPerRow, tiers }),
   });
 
   if (!res.ok) {

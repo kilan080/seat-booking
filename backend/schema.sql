@@ -10,6 +10,7 @@ CREATE TABLE seats (
   status TEXT NOT NULL DEFAULT 'available',
   held_by TEXT,
   held_until TIMESTAMPTZ,
+  price_cents INTEGER NOT NULL DEFAULT 0,
   UNIQUE(event_id, label)
 );
 
