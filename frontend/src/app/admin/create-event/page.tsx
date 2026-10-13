@@ -6,6 +6,8 @@ import toast from "react-hot-toast";
 import { useAuthStore } from "@/store/auth-store";
 import { useCreateEvent } from "@/hooks/use-events";
 
+type TierInput = { rows: number; price: number };
+
 export default function CreateEventPage() {
   const user = useAuthStore((state) => state.user);
   const router = useRouter();
@@ -14,6 +16,21 @@ export default function CreateEventPage() {
   const [name, setName] = useState("");
   const [rows, setRows] = useState(5);
   const [seatsPerRow, setSeatsPerRow] = useState(10);
+  const [tiers, setTiers] = useState<TierInput[]>([{ rows: 5, price: 50 }]);
+
+  function updateTier(index: number, field: keyof TierInput, value: number) {
+    setTiers((prev) =>
+      prev.map((t, i) => (i === index ? { ...t, [field]: value } : t)),
+    );
+  }
+  function addTier() {
+    setTiers((prev) => [...prev, { rows: 1, price: 0 }]);
+  }
+  function removeTier(index: number) {
+    setTiers((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  const assignedRows = tiers.reduce((sum, t) => sum + t.rows, 0);
 
   if (!user || user.role !== "admin") {
     return (
@@ -43,6 +60,30 @@ export default function CreateEventPage() {
       return;
     }
 
+    // NEW: every tier needs a whole number of rows (at least 1) and a valid price
+    if (tiers.some((t) => !Number.isInteger(t.rows) || t.rows < 1)) {
+      toast.error("Each tier needs at least 1 row");
+      return;
+    }
+    if (tiers.some((t) => Number.isNaN(t.price) || t.price < 0)) {
+      toast.error("Prices can't be negative");
+      return;
+    }
+
+    // NEW: tiers must cover exactly the rows the event has
+    if (assignedRows !== rows) {
+      toast.error(
+        `Tiers cover ${assignedRows} of ${rows} rows. They must match.`,
+      );
+      return;
+    }
+
+    // NEW: convert money units (50.00) to minor units (5000) for the API
+    const tiersPayload = tiers.map((t) => ({
+      rows: t.rows,
+      priceCents: Math.round(t.price * 100),
+    }));
+
     const toastId = toast.loading("Creating event...");
 
     try {
@@ -50,6 +91,7 @@ export default function CreateEventPage() {
         name,
         rows,
         seatsPerRow,
+        tiers: tiersPayload,
       });
       toast.dismiss(toastId);
       router.push(`/events/${result.event.id}`);
@@ -75,7 +117,9 @@ export default function CreateEventPage() {
             onChange={(e) => setName(e.target.value)}
             onBlur={() => {
               if (!name.trim()) {
-                toast.error("Event name cannot be empty", { id: "input-name-err" });
+                toast.error("Event name cannot be empty", {
+                  id: "input-name-err",
+                });
               }
             }}
             required
@@ -96,7 +140,9 @@ export default function CreateEventPage() {
             onChange={(e) => {
               const val = Number(e.target.value);
               if (val > 26) {
-                toast.error("Maximum 26 rows allowed (A-Z)", { id: "rows-limit" });
+                toast.error("Maximum 26 rows allowed (A-Z)", {
+                  id: "rows-limit",
+                });
               } else if (val < 1 && e.target.value !== "") {
                 toast.error("Minimum 1 row required", { id: "rows-limit" });
               }
@@ -119,13 +165,77 @@ export default function CreateEventPage() {
             onChange={(e) => {
               const val = Number(e.target.value);
               if (val < 1 && e.target.value !== "") {
-                toast.error("Minimum 1 seat per row required", { id: "seats-limit" });
+                toast.error("Minimum 1 seat per row required", {
+                  id: "seats-limit",
+                });
               }
               setSeatsPerRow(val);
             }}
             required
             className="w-full px-3 py-2 rounded bg-[#17171B] border border-white/10 text-sm focus:outline-none focus:border-[#E8A33D]"
           />
+        </div>
+
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-xs text-[#9A9AA2]">
+              Pricing tiers (front rows first)
+            </label>
+            <span
+              className={`text-xs ${assignedRows === rows ? "text-[#3E8E63]" : "text-[#E8A33D]"}`}
+            >
+              {assignedRows} of {rows} rows
+            </span>
+          </div>
+
+          <div className="flex gap-2 mb-1 text-[10px] text-[#9A9AA2]">
+            <span className="w-1/2">Rows in tier</span>
+            <span className="w-1/2">Price per seat</span>
+          </div>
+
+          {tiers.map((tier, index) => (
+            <div key={index} className="flex gap-2 mb-2">
+              <input
+                type="number"
+                min={1}
+                value={tier.rows}
+                onChange={(e) =>
+                  updateTier(index, "rows", Number(e.target.value))
+                }
+                aria-label="Rows in tier"
+                className="w-1/2 px-3 py-2 rounded bg-[#17171B] border border-white/10 text-sm focus:outline-none focus:border-[#E8A33D]"
+              />
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={tier.price}
+                onChange={(e) =>
+                  updateTier(index, "price", Number(e.target.value))
+                }
+                aria-label="Price per seat"
+                className="w-1/2 px-3 py-2 rounded bg-[#17171B] border border-white/10 text-sm focus:outline-none focus:border-[#E8A33D]"
+              />
+              {tiers.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeTier(index)}
+                  aria-label="Remove tier"
+                  className="text-xs text-red-400 px-1"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={addTier}
+            className="text-xs text-[#E8A33D] hover:underline"
+          >
+            + Add tier
+          </button>
         </div>
 
         <button
