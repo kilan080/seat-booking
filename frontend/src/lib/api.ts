@@ -8,6 +8,7 @@ export type Booking = {
   label: string;
   event_id: number;
   event_name: string;
+  price_cents: number;
 };
 
 export async function fetchEvents(): Promise<Event[]> {

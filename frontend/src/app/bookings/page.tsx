@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth-store";
 import { useMyBookings } from "@/hooks/use-bookings";
+import { formatPrice } from "@/lib/format";
 
 export default function BookingsPage() {
   const user = useAuthStore((state) => state.user);
   const { data: bookings, isLoading, error } = useMyBookings();
+
+  const totalCents = bookings?.reduce((sum, b) => sum + b.price_cents, 0) ?? 0;
 
   if (!user) {
     return (
@@ -52,6 +55,14 @@ export default function BookingsPage() {
         {bookings && bookings.length === 0 && (
           <p className="text-center text-sm text-[#9A9AA2]">
             You haven&apos;t booked any seats yet.
+          </p>
+        )}
+
+        {bookings && bookings.length > 0 && (
+          <p className="text-center text-sm text-[#9A9AA2] mb-6">
+            {bookings.length} seat{bookings.length > 1 ? "s" : ""} ·{" "}
+            <span className="text-[#E8A33D]">{formatPrice(totalCents)}</span>{" "}
+            total
           </p>
         )}
 

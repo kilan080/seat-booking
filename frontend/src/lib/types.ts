@@ -10,4 +10,5 @@ export type Seat = {
   status: "available" | "held" | "sold";
   held_by: string | null;
   held_until: string | null;
+  price_cents: number;
 };

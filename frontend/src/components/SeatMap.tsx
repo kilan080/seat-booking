@@ -12,6 +12,7 @@ import {
 import { useSeatWebSocket } from "@/hooks/use-seat-websocket";
 import { Seat } from "@/lib/types";
 import { useAuthStore } from "@/store/auth-store";
+import { formatPrice } from "@/lib/format";
 
 const ROW_ORDER = ["A", "B", "C", "D", "E"];
 
@@ -74,6 +75,17 @@ export default function SeatMap({ eventId }: { eventId: string }) {
         a.label.localeCompare(b.label, undefined, { numeric: true }),
       ),
   })).filter((r) => r.seats.length > 0);
+
+  const priceTiers = Object.entries(
+    seats.reduce<Record<number, string[]>>((acc, s) => {
+      const row = s.label[0];
+      acc[s.price_cents] ??= [];
+      if (!acc[s.price_cents].includes(row)) acc[s.price_cents].push(row);
+      return acc;
+    }, {}),
+  )
+    .map(([price, rows]) => ({ price: Number(price), rows: rows.sort() }))
+    .sort((a, b) => b.price - a.price);
 
   function formatCountdown(heldUntil: string) {
     const secondsLeft = Math.max(
@@ -175,7 +187,7 @@ export default function SeatMap({ eventId }: { eventId: string }) {
                     key={seat.id}
                     onClick={() => handleSeatClick(seat)}
                     disabled={seat.status !== "available"}
-                    title={`${seat.label} — ${seat.status}`}
+                    title={`${seat.label} — ${seat.status} — ${formatPrice(seat.price_cents)}`}
                     className={`flex items-center justify-center rounded-md text-[10px] sm:text-xs font-medium text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${statusStyles[seat.status]}`}
                     style={{
                       width: "clamp(22px, 6.2vw, 34px)",
@@ -202,6 +214,23 @@ export default function SeatMap({ eventId }: { eventId: string }) {
           </span>
         </div>
 
+        {priceTiers.length > 0 && (
+          <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs text-[#9A9AA2]">
+            {priceTiers.map((tier) => (
+              <span key={tier.price}>
+                Row{tier.rows.length > 1 ? "s" : ""} {tier.rows[0]}
+                {tier.rows.length > 1
+                  ? `–${tier.rows[tier.rows.length - 1]}`
+                  : ""}
+                {" · "}
+                <span className="text-[#E8A33D]">
+                  {formatPrice(tier.price)}
+                </span>
+              </span>
+            ))}
+          </div>
+        )}
+
         {seats.some((s) => s.status === "held" && s.held_until) && (
           <div className="mt-8 border-t border-white/10 pt-6">
             <h3 className="text-xs tracking-[0.15em] text-[#9A9AA2] mb-3">
@@ -217,7 +246,12 @@ export default function SeatMap({ eventId }: { eventId: string }) {
                       key={s.id}
                       className="flex justify-between items-center text-[#C7C7CE]"
                     >
-                      <span>Seat {s.label}</span>
+                      <span>
+                        Seat {s.label}{" "}
+                        <span className="text-xs text-[#9A9AA2]">
+                          · {formatPrice(s.price_cents)}
+                        </span>
+                      </span>
                       <div className="flex items-center gap-3">
                         <span className="tabular-nums text-[#E8A33D]">
                           {formatCountdown(s.held_until!)}

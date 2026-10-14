@@ -128,11 +128,11 @@ app.get("/bookings", requireAuth, async (req: AuthedRequest, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT s.id AS seat_id, s.label, e.id AS event_id, e.name AS event_name
-       FROM seats s
-       JOIN events e ON e.id = s.event_id
-       WHERE s.held_by = $1 AND s.status = 'sold'
-       ORDER BY e.name, s.label`,
+      `SELECT s.id AS seat_id, s.label, s.price_cents, e.id AS event_id, e.name AS event_name
+        FROM seats s
+        JOIN events e ON e.id = s.event_id
+        WHERE s.held_by = $1 AND s.status = 'sold'
+        ORDER BY e.name, s.label`,
       [userId.toString()]
     );
 

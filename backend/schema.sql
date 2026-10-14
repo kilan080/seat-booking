@@ -18,11 +18,20 @@ CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE refresh_tokens (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  token TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 INSERT INTO events (name) VALUES ('Test Concert');
 
-INSERT INTO seats (event_id, label)
-SELECT 1, chr(65 + row) || num
+INSERT INTO seats (event_id, label, price_cents)
+SELECT 1, chr(65 + row) || num, CASE WHEN row < 2 THEN 10000 ELSE 5000 END
 FROM generate_series(0, 4) AS row, generate_series(1, 10) AS num;
