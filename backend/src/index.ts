@@ -8,7 +8,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
-import crypto from "crypto"
+import crypto from "crypto";
+import status from "http-status";
 
 
 
@@ -46,7 +47,7 @@ function requireAuth(req: AuthedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Missing or invalid authorization header" });
+    return res.status(status.UNAUTHORIZED).json({ error: "Missing or invalid authorization header" });
   }
 
   const token = authHeader.slice("Bearer ".length);
@@ -62,13 +63,13 @@ function requireAuth(req: AuthedRequest, res: Response, next: NextFunction) {
     req.userRole = decoded.role;
     next();
   } catch (err) {
-    return res.status(401).json({ error: "Invalid or expired token" });
+    return res.status(status.UNAUTHORIZED).json({ error: "Invalid or expired token" });
   }
 }
 
 function requireAdmin(req: AuthedRequest, res: Response, next: NextFunction) {
     if(req.userRole !== "admin") {
-        return res.status(403).json({
+        return res.status(status.FORBIDDEN).json({
             error: "Unauthorized - Admin Only"
         })
     }
@@ -140,7 +141,7 @@ app.get("/bookings", requireAuth, async (req: AuthedRequest, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Something went wrong" });
+    res.status(status.INTERNAL_SERVER_ERROR).json({ error: "Something went wrong" });
   }
 });
 
@@ -161,12 +162,12 @@ app.post("/events", requireAuth, requireAdmin, async (req: AuthedRequest, res) =
       Number.isInteger(t.priceCents) && t.priceCents >= 0
   );
   if (!validTiers) {
-    return res.status(400).json({ error: "Each tier needs a positive row count and a non-negative integer price" });
+    return res.status(status.BAD_REQUEST).json({ error: "Each tier needs a positive row count and a non-negative integer price" });
   }
 
   const tierRowTotal = tiers.reduce((sum: number, t: any) => sum + t.rows, 0);
   if (tierRowTotal !== rows) {
-    return res.status(400).json({ error: "Tier row counts must add up to the total number of rows" });
+    return res.status(status.BAD_REQUEST).json({ error: "Tier row counts must add up to the total number of rows" });
   }
 
   // Expand tiers into one price per row, e.g. [10000, 10000, 5000, 5000, 5000]
@@ -190,11 +191,11 @@ app.post("/events", requireAuth, requireAdmin, async (req: AuthedRequest, res) =
     );
 
     await client.query("COMMIT");
-    res.status(201).json({ event });
+    res.status(status.CREATED).json({ event });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
-    res.status(500).json({ error: "Something went wrong" });
+    res.status(status.INTERNAL_SERVER_ERROR).json({ error: "Something went wrong" });
   } finally {
     client.release();
   }
@@ -216,14 +217,14 @@ app.post("/seats/:seatId/hold", requireAuth, generalApiLimiter, async (req: Auth
 
         if(!seat) {
             await client.query("ROLLBACK");
-            return res.status(404).json({
+            return res.status(status.NOT_FOUND).json({
                 error: "seat not found"
             })
         }
 
         if(seat.status !== "available") {
             await client.query("ROLLBACK");
-            return res.status(409).json({
+            return res.status(status.CONFLICT).json({
                 error: "seat not available anymore"
             })
         }
@@ -246,7 +247,7 @@ app.post("/seats/:seatId/hold", requireAuth, generalApiLimiter, async (req: Auth
     } catch (err) {
         await client.query("ROLLBACK");
         console.error(err);
-        res.status(500).json({
+        res.status(status.INTERNAL_SERVER_ERROR).json({
             error: "something went wrong"
         });
     } finally {
@@ -270,14 +271,14 @@ app.post("/seats/:seatId/cancel", requireAuth, generalApiLimiter, async (req:Aut
 
         if (!seat) {
             await client.query("ROLLBACK");
-            return res.status(404).json({
+            return res.status(status.NOT_FOUND).json({
                 error: "seat not found"
             });
         }
 
         if (seat.status !== "held" || seat.held_by !== userId.toString()) {
             await client.query("ROLLBACK");
-            return res.status(403).json({
+            return res.status(status.FORBIDDEN).json({
                 error: "Seat not held by you"
             })
         }
@@ -300,7 +301,7 @@ app.post("/seats/:seatId/cancel", requireAuth, generalApiLimiter, async (req:Aut
     } catch (err) {
         await client.query("ROLLBACK");
         console.error(err);
-        res.status(500).json({
+        res.status(status.INTERNAL_SERVER_ERROR).json({
            error: "something went wrong" 
         })
     } finally {
@@ -326,28 +327,28 @@ app.post("/seats/:seatId/confirm", requireAuth, generalApiLimiter, async (req: A
 
         if(!seat) {
             await client.query("ROLLBACK");
-            return res.status(404).json({
+            return res.status(status.NOT_FOUND).json({
                 error: "Seat not found"
             });
         };
 
         if(seat.status !== "held") {
             await client.query("ROLLBACK");
-            return res.status(409).json({
+            return res.status(status.CONFLICT).json({
                 error: "seat not held by anyone"
             });
         }
 
         if(seat.held_by !== userId.toString()) {
             await client.query("ROLLBACK");
-            return res.status(403).json({
+            return res.status(status.FORBIDDEN).json({
                 error: "This seat is held by someone else"
             });
         }
 
         if(new Date(seat.held_until) < new Date()) {
             await client.query("ROLLBACK");
-            return res.status(410).json({
+            return res.status(status.GONE).json({
                 error: "Hold has expired"
             })
         }
@@ -368,7 +369,7 @@ app.post("/seats/:seatId/confirm", requireAuth, generalApiLimiter, async (req: A
     } catch (err) {
         await client.query("ROLLBACK");
         console.error(err);
-        res.status(500).json({
+        res.status(status.INTERNAL_SERVER_ERROR).json({
             error: "something went wrong"
         });
     } finally {
@@ -380,13 +381,13 @@ app.post("/auth/signup", async (req, res) => {
     const { email, password } = req.body;
 
     if(!email || !password) {
-        return res.json(400).json({
+        return res.json(status.BAD_REQUEST).json({
             error: "Email or Password Required"
         });
     }
 
     if (password.length < 8) {
-        return res.status(400).json({
+        return res.status(status.BAD_REQUEST).json({
             error: "Password must be at least 8 characters"
         })
     };
@@ -404,10 +405,10 @@ app.post("/auth/signup", async (req, res) => {
         });
     } catch (err:any) {
        if (err.code === "23505") {
-      return res.status(409).json({ error: "Email already in use" });
+      return res.status(status.CONFLICT).json({ error: "Email already in use" });
     }
     console.error(err);
-    res.status(500).json({ error: "Something went wrong" });
+    res.status(status.INTERNAL_SERVER_ERROR).json({ error: "Something went wrong" });
         
     }
     
@@ -417,7 +418,7 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required" });
+    return res.status(status.BAD_REQUEST).json({ error: "Email and password are required" });
   }
 
   try {
@@ -428,12 +429,12 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
     const user = result.rows[0];
 
     if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(status.UNAUTHORIZED).json({ error: "Invalid email or password" });
     }
 
     const passwordMatches = await bcrypt.compare(password, user.password_hash);
     if (!passwordMatches) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(status.UNAUTHORIZED).json({ error: "Invalid email or password" });
     }
 
     const accessToken = jwt.sign(
@@ -453,7 +454,7 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
     res.json({ accessToken, refreshToken, user: { id: user.id, email: user.email, role: user.role } });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Something went wrong" });
+    res.status(status.INTERNAL_SERVER_ERROR).json({ error: "Something went wrong" });
   }
 });
 
@@ -461,7 +462,7 @@ app.post("/auth/refresh", async(req, res) => {
     const { refreshToken } = req.body;
 
     if(!refreshToken) {
-        return res.status(400).json({error: "Refresh token required"})
+        return res.status(status.BAD_REQUEST).json({error: "Refresh token required"})
     }
 
     try {
@@ -475,14 +476,14 @@ app.post("/auth/refresh", async(req, res) => {
         const record = result.rows[0];
 
         if(!record) {
-            return res.status(401).json({
+            return res.status(status.UNAUTHORIZED).json({
                 error:"Invalid or expired refresh token"
             });
         }
 
         if (new Date(record.expires_at) < new Date()) {
             await pool.query("DELETE FROM refresh_tokens WHERE token = $1", [refreshToken]);
-            return res.status(401).json({ error: "Refresh token expired" });
+            return res.status(status.UNAUTHORIZED).json({ error: "Refresh token expired" });
         }
 
         const newAccessToken = jwt.sign(
@@ -495,7 +496,7 @@ app.post("/auth/refresh", async(req, res) => {
 
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: "Something went wrong" });
+        res.status(status.INTERNAL_SERVER_ERROR).json({ error: "Something went wrong" });
     }
 });
 
